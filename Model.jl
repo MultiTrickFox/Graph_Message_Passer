@@ -69,7 +69,7 @@ end
 
 
 mutable struct Node
-    nn::Recurrent
+    nn::Array{Recurrent}
     label::Array{Float16}
     edges
 
@@ -82,7 +82,7 @@ end
 
 
 mutable struct Edge
-    nn::FeedForward
+    nn::Array{FeedForward}
     label::String
     node_from::Node
     node_to::Node
@@ -102,11 +102,11 @@ neighbors_of(node) = [edge.node_to for edge in node.edges]
 update_node_wrt_neighbors!(node) =
 begin
 
-        incoming = [edge.nn(hcat(edge.node_to.nn.state, edge.node_to.label))
+        incoming = [prop(edge.nn, hcat(edge.node_to.nn[end].state, edge.node_to.label))
                         for edge in node.edges]
-        node.nn(sum(incoming))
+        prop(node.nn, sum(incoming))
 
-node.nn.state
+node.nn[end].state
 end
 
 
@@ -139,5 +139,5 @@ begin
 
     end
 
-node.nn.state
+node.nn[end].state
 end
