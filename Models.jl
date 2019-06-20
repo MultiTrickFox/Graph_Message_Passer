@@ -70,7 +70,7 @@ end
 
 mutable struct Node
     nn::Array{Recurrent}
-    label::Array{Float16}
+    label#::Array{Float16}
     edges
 
 Node(nn, label, edges=[]) = new(
@@ -83,13 +83,13 @@ end
 
 mutable struct Edge
     nn::Array{FeedForward}
-    label::String
+    description::String
     node_from::Node
     node_to::Node
 
-Edge(nn, label, node_from, node_to) = new(
+Edge(nn, description, node_from, node_to) = new(
     nn,
-    label,
+    description,
     node_from,
     node_to,
 )
