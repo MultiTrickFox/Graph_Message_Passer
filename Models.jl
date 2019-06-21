@@ -37,11 +37,6 @@ begin
 layer.state = Param(keep .* interm + (1 .- keep) .* layer.state)
 end
 
-reset_state!(layer::Recurrent) =
-begin
-    layer.state = Param(zeros(size(layer.state)))
-end
-
 
 mutable struct FeedForward
     w::Param
@@ -70,7 +65,7 @@ end
 
 mutable struct Node
     nn::Array{Recurrent}
-    label#::Array{Float16}
+    label
     edges
 
 Node(nn, label, edges=[]) = new(
@@ -96,15 +91,23 @@ Edge(nn, description, node_from, node_to) = new(
 end
 
 
+reset_state!(node) =
+    for layer in node.nn
+        layer.state = Param(reshape(node.label, 1, length(node.label)))
+    end
+
+
 neighbors_of(node) = [edge.node_to for edge in node.edges]
 
 
 update_node_wrt_neighbors!(node) =
 begin
 
-        incoming = [prop(edge.nn, hcat(edge.node_to.nn[end].state, edge.node_to.label))
+        incoming = [prop(edge.nn, edge.node_to.nn[end].state)
                         for edge in node.edges]
         prop(node.nn, sum(incoming))
+
+        # node.nn[end].state = Param(normalize(node.nn[end].state))
 
 node.nn[end].state
 end
@@ -141,3 +144,6 @@ begin
 
 node.nn[end].state
 end
+
+
+normalize(array) = array / sqrt(sum(array .^2))

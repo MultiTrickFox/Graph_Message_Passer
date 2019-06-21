@@ -80,7 +80,7 @@ begin
     end
 
     if !edge_in_graph
-        edge_nn = [FeedForward(lbl_size*2, lbl_size)]
+        edge_nn = [FeedForward(lbl_size, lbl_size)]
     end
 
     if bidirec_edge
