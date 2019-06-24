@@ -51,13 +51,22 @@ insert!(graph,
         (Z_description, Z_label),
         (K_description, K_label),
         (Edge1_description, Edge1_label),
-        bi_direc=false
+        bi_direc=true
         ) ; println(" ")
 
 
 
 node_K = get_node(graph,"K")
+node_L = get_node(graph, "L")
 
-collected = value(update_node_wrt_depths!(node_K, depth=1))
+collected = value(update_node_wrt_depths!(node_K, depth=2))
 
 println(collected)
+
+
+predicted_edge_K_to_L = predict_edge(graph, node_K, node_L)
+
+println(value(predicted_edge_K_to_L))
+
+
+train_on!(graph, 10, depth=2, lr=.001)

@@ -1,5 +1,5 @@
 using AutoGrad: Param, @diff, value, grad
-using Knet: softmax
+using Random: shuffle
 
 
 label_size_node = 3
@@ -9,11 +9,15 @@ label_size_edge = 2
 # definitions
 
 
+debug = true
+
+
 sigm(x) = 1 / (1 + exp(-x))
 tanh(x) = 2 * sigm(2*x) - 1
 
-
-debug = true
+softmax(list) = (exp_list -> exp_list./sum(exp_list))(exp.(list))
+cross_entropy(label, prediction) = -(label .* log.(prediction))
+mse(label, prediction) = (label - prediction) .^2
 
 
 # neural structs
@@ -50,7 +54,7 @@ mutable struct Node
     nn::Array{FeedForward}
     description::String
     label
-    edges # ::Array{Edge} # cmon julia. u can do circular declaration. u should.
+    edges # ::Array{Edge} # cmon julia u can do circular declaration. u should.
     collected
 
 Node(nn, description, label, edges=[]) = new(
@@ -244,3 +248,53 @@ begin
 
 root_node_collected
 end
+
+
+# highest level ops
+
+
+predict_edge(graph, node_from, node_to; depth=1) =
+begin
+    encoding_node_from = update_node_wrt_depths!(node_from,depth=depth)
+    encoding_node_to = update_node_wrt_depths!(node_to,depth=depth)
+
+softmax(prop(graph.predictor, hcat(encoding_node_from, encoding_node_to)))
+end
+
+
+train_on!(graph, epochs; depth=1, lr=.001) =
+    for ep in 1:epochs
+
+        ep_loss = 0
+        grads = [zeros(size(getfield(layer, param))) for node in graph.unique_nodes for layer in node.nn for param in fieldnames(typeof(layer))]
+
+        # get grads
+
+        for edge in shuffle(graph.unique_edges)
+
+            result = @diff sum(cross_entropy(edge.label, predict_edge(graph, edge.node_from, edge.node_to, depth=depth)))
+
+            ep_loss += value(result)
+            grads += [grad(result, getfield(layer, param)) for node in graph.unique_nodes for layer in node.nn for param in fieldnames(typeof(layer))]
+
+        end
+
+        # update params
+
+        ctr = 0
+        for node in graph.unique_nodes
+            for layer in node.nn
+                for param in fieldnames(typeof(layer))
+                    ctr +=1
+
+                    setfield!(layer, param, Param(getfield(layer, param) - lr * grads[ctr]))
+
+                end
+            end
+        end
+
+        # display
+
+        println("Epoch $(ep) Loss $(ep_loss)")
+
+    end
