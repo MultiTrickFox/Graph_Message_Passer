@@ -1,18 +1,61 @@
-include("Creator.jl")
+include("Models.jl")
+
+"
+
+Example Graph:
+
+    K [0 0 1] -> edge_type_1 [0 1] -> L [0 1 0]
+
+    L [0 1 0] -> edge_type_2 [1 0] -> Z [1 0 0]
+
+    Z [1 0 0] <-> edge_type_1 [0 1] <-> K [0 0 1]
+
+"
+
 
 graph = Graph()
 
-K = [0,0,1]
-L = [0,1,0]
-Z = [0.2,0.1,0.8]
 
 
-node_K, node_L = insert!(graph, K, L, "type1")
+K_description = "K"
+K_label = [0 0 1]
 
-println(" ")
+L_description = "L"
+L_label = [0 1 0]
 
-node_K, node_Z = insert!(graph, K, Z, "type2")
+Z_description = "Z"
+Z_label = [0.2 0.1 0.8]
 
-println(" ")
 
-node_L, node_Z = insert!(graph, L, Z, "type2")
+Edge1_description = "Edge1"
+Edge1_label = [0 1]
+
+Edge2_description = "Edge2"
+Edge2_label = [1 0]
+
+
+
+insert!(graph,
+        (K_description, K_label),
+        (L_description, L_label),
+        (Edge1_description, Edge1_label),
+        ) ; println(" ")
+
+insert!(graph,
+        (L_description, L_label),
+        (Z_description, Z_label),
+        (Edge1_description, Edge1_label),
+        ) ; println(" ")
+
+insert!(graph,
+        (Z_description, Z_label),
+        (K_description, K_label),
+        (Edge1_description, Edge1_label),
+        bi_direc=true
+        ) ; println(" ")
+
+
+
+node_K = get_node(graph,"K")
+
+collected = value(update_node_wrt_depths!(node_K))
