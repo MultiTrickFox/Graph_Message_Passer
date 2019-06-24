@@ -1,11 +1,19 @@
 using AutoGrad: Param, @diff, value, grad
+using Knet: softmax
+
+
+label_size_node = 3
+label_size_edge = 2
 
 
 # definitions
 
 
-label_size_node = 3
-label_size_edge = 5
+sigm(x) = 1 / (1 + exp(-x))
+tanh(x) = 2 * sigm(2*x) - 1
+
+
+debug = true
 
 
 # neural structs
@@ -29,9 +37,9 @@ end
 prop(model, in) =
 begin
     for layer in model
-        in = layer(in)
+        in = tanh.(layer(in))
     end
-in
+softmax(in)
 end
 
 
@@ -112,13 +120,14 @@ begin
     node_from_in_graph = false
     for node in graph.unique_nodes
         if node.label == label_node_from
+            debug ? println("$(node.description) found in graph.") : ()
             node_from_in_graph = true
             node_from = node
-            println("$(node.description) found in graph.")
             break
         end
     end
     if !node_from_in_graph
+        debug ? println("$(description_node_from) not in graph.") : ()
         node_from = Node([FeedForward(label_size_node, label_size_node)], description_node_from, label_node_from)
         push!(graph.unique_nodes, node_from)
     end
@@ -126,13 +135,14 @@ begin
     node_to_in_graph = false
     for node in graph.unique_nodes
         if node.label == label_node_to
+            debug ? println("$(node.description) found in graph.") : ()
             node_to_in_graph = true
             node_to = node
-            println("$(node.description) found in graph.")
             break
         end
     end
     if !node_to_in_graph
+        debug ? println("$(description_node_to) not in graph.") : ()
         node_to = Node([FeedForward(label_size_node, label_size_node)], description_node_to, label_node_to)
         push!(graph.unique_nodes, node_to)
     end
@@ -140,17 +150,18 @@ begin
     edge_in_graph = false
     for edge in graph.unique_edges
         if edge.label == label_edge
+            debug ? println("$(edge.description) found in graph.") : ()
             edge_in_graph = true
             edge_nn = edge.nn
-            println("$(edge.description) found in graph.")
             break
         end
     end
     if !edge_in_graph
+        debug ? println("$(description_edge) not in graph.") : ()
         edge_nn = [FeedForward(label_size_node*2, label_size_node)]
     end
 
-    if bidirec_edge
+    if bi_direc
 
         edge1 = Edge(edge_nn, description_edge, label_edge, node_from, node_to)
         edge2 = Edge(edge_nn, description_edge, label_edge, node_to, node_from)

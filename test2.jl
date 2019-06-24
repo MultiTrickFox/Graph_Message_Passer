@@ -44,18 +44,20 @@ insert!(graph,
 insert!(graph,
         (L_description, L_label),
         (Z_description, Z_label),
-        (Edge1_description, Edge1_label),
+        (Edge2_description, Edge2_label),
         ) ; println(" ")
 
 insert!(graph,
         (Z_description, Z_label),
         (K_description, K_label),
         (Edge1_description, Edge1_label),
-        bi_direc=true
+        bi_direc=false
         ) ; println(" ")
 
 
 
 node_K = get_node(graph,"K")
 
-collected = value(update_node_wrt_depths!(node_K))
+collected = value(update_node_wrt_depths!(node_K, depth=1))
+
+println(collected)
