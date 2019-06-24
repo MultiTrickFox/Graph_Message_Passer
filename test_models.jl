@@ -59,6 +59,7 @@ insert!(graph,
 node_K = get_node(graph,"K")
 node_L = get_node(graph, "L")
 
+
 collected = value(update_node_wrt_depths!(node_K, depth=2))
 
 println(collected)
@@ -69,4 +70,8 @@ predicted_edge_K_to_L = predict_edge(graph, node_K, node_L)
 println(value(predicted_edge_K_to_L))
 
 
-train_on!(graph, 10, depth=2, lr=.001)
+train_on!(graph, 10, depth=2, lr=.01)
+
+edge_between_L_K = predicted_edge(graph, predict_edge(graph, node_L, node_K))
+
+@show edge_between_L_K

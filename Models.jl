@@ -105,9 +105,19 @@ get_node(graph, node_description) =
     end
 
 
-get_edge(graph, edge_description) =
+get_edge(graph, edge_description::String) =
     for edge in graph.unique_edges
         if edge.description == edge_description
+            return edge
+        end
+    end
+get_edge(graph, edge_argmax) =
+    for edge in graph.unique_edges
+        println(edge_argmax)
+        println(argmax(edge.label))
+        println(" ")
+        if argmax(edge.label) == edge_argmax
+
             return edge
         end
     end
@@ -298,3 +308,12 @@ train_on!(graph, epochs; depth=1, lr=.001) =
         println("Epoch $(ep) Loss $(ep_loss)")
 
     end
+
+
+predicted_edge(graph, prediction) =
+begin
+    predicted_id = argmax(prediction)
+    edge = get_edge(graph, predicted_id).description
+
+edge
+end
