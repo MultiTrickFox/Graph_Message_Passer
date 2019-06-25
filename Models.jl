@@ -2,8 +2,8 @@ using AutoGrad: Param, @diff, value, grad
 using Random: shuffle
 
 
-label_size_node = 3
-label_size_edge = 2
+label_size_node = 4
+label_size_edge = 3
 
 
 # definitions
@@ -113,11 +113,7 @@ get_edge(graph, edge_description::String) =
     end
 get_edge(graph, edge_argmax) =
     for edge in graph.unique_edges
-        println(edge_argmax)
-        println(argmax(edge.label))
-        println(" ")
         if argmax(edge.label) == edge_argmax
-
             return edge
         end
     end
@@ -125,8 +121,8 @@ get_edge(graph, edge_argmax) =
 
 insert!(graph,
         (description_node_from, label_node_from),
+        (description_edge, label_edge),
         (description_node_to, label_node_to),
-        (description_edge, label_edge);
         bi_direc=false) =
 
 begin
@@ -209,8 +205,8 @@ neighbors_of(node) = [edge.node_to for edge in node.edges]
 update_node_wrt_neighbors!(node) =
 begin
 
-        incoming = [prop(edge.nn, hcat(edge.node_to.collected, edge.node_to.label)) for edge in node.edges]
-        node.collected = prop(node.nn, sum(incoming))
+    incoming = [prop(edge.nn, hcat(edge.node_to.collected, edge.node_to.label)) for edge in node.edges]
+    node.collected = prop(node.nn, sum(incoming))
 
 end
 
@@ -285,7 +281,8 @@ train_on!(graph, epochs; depth=1, lr=.001) =
             result = @diff sum(cross_entropy(edge.label, predict_edge(graph, edge.node_from, edge.node_to, depth=depth)))
 
             ep_loss += value(result)
-            grads += [grad(result, getfield(layer, param)) for node in graph.unique_nodes for layer in node.nn for param in fieldnames(typeof(layer))]
+
+            grads += [grad(result, getfield(layer, param)) == nothing ? zeros(size(getfield(layer, param))) : grad(result, getfield(layer, param)) for node in graph.unique_nodes for layer in node.nn for param in fieldnames(typeof(layer))]
 
         end
 
@@ -316,4 +313,23 @@ begin
     edge = get_edge(graph, predicted_id).description
 
 edge
+end
+
+
+# graph builder
+
+
+build_graph(graph_string, node_encodings, edge_encodings) =
+begin
+    graph = Graph()
+
+    for statement in split(graph_string, "\n")
+        if statement != ""
+            description_node_from, description_edge, description_node_to = split(statement, " ")
+            label_node_from, label_edge, label_node_to = node_encodings[description_node_from], edge_encodings[description_edge], node_encodings[description_node_to]
+            insert!(graph, (description_node_from, label_node_from), (description_edge, label_edge), (description_node_to, label_node_to))
+        end
+    end
+
+graph
 end
