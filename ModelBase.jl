@@ -3,8 +3,35 @@ using AutoGrad: Param, @diff, value, grad
 
 sigm(x) = 1 / (1 + exp(-x))
 tanh(x) = 2 * sigm(2*x) - 1
+relu(x) = begin @show size(x) ; @show value(x) ; value(x) < 0 ? x : x end # TODO : investigate.
 
-softmax(list) = (exp_list -> exp_list./sum(exp_list))(exp.(list))
+# softmax_vector(vector) =
+# begin
+#     println("size of in vector $(size(vector))")
+#
+#     (exp_vector -> exp_vector./sum(exp_vector))(exp.(vector))
+# end
+#
+#
+# softmax_vectors(vectors) =
+# begin
+#     for vector in vectors
+#         println("vector size $(size(vector))")
+#     end
+#
+#     results = [softmax_vector(vector) for vector in zip(vectors)]
+#
+#
+#     for vector in zip(vectors)
+#
+#         @show value(vector)
+#
+#     end
+#     [softmax_vector(vector) for vector in zip(vectors)]
+# end
+using Knet: softmax
+
+
 cross_entropy(label, prediction) = -(label .* log.(prediction))
 mse(label, prediction) = (label - prediction) .^2
 
@@ -58,15 +85,15 @@ end
 
 (layer::FeedForward)(in) =
 begin
-    in * layer.w + layer.b
+    tanh.(in * layer.w + layer.b)
 end
 
 
 prop(model, in) =
 begin
     for layer in model
-        in = tanh.(layer(in))
+        in = layer(in)
     end
-    
+
 in
 end

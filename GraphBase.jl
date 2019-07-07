@@ -1,10 +1,6 @@
 include("ModelBase.jl")
 
 
-label_size_node = 4
-label_size_edge = 3
-
-
 mutable struct Node
     nn::Array{FeedForward}
     description::String
@@ -42,15 +38,17 @@ end
 mutable struct Graph
     unique_nodes::Array{Node}
     unique_edges::Array{Edge}
+    attender::Array{FeedForward}
     predictor::Array{FeedForward}
     node_encodings::Dict
     edge_encodings::Dict
 
-Graph(node_encoding, edge_encodings) = new(
+Graph(node_encodings, edge_encodings) = new(
     [],
     [],
-    [FeedForward(label_size_node*2, label_size_edge)],
-    node_encoding,
+    [FeedForward(length(node_encodings)*2, length(edge_encodings))],
+    [FeedForward(length(node_encodings)*2, length(edge_encodings))],
+    node_encodings,
     edge_encodings,
 )
 end
@@ -70,6 +68,13 @@ get_edge(graph, edge_description::String) =
         end
     end
 
+get_edge(graph, node_from::Node, node_to::Node) =
+    for edge in graph.unique_edges
+        if edge.node_from == node_from && edge.node_to == node_to
+            return edge
+        end
+    end
+
 
 neighbors_of(node) = [edge.node_to for edge in node.edges]
 
@@ -81,6 +86,9 @@ insert!(graph,
         bi_direc=false) =
 
 begin
+
+    label_size_node = length(graph.node_encodings)
+    label_size_edge = length(graph.edge_encodings)
 
     node_from_in_graph = false
     for node in graph.unique_nodes
@@ -154,16 +162,19 @@ node_from, node_to
 end
 
 
-update_node_wrt_neighbors!(node) =
+update_node_wrt_neighbors!(node, attender) =
 begin
 
-    incoming = [prop(edge.nn, hcat(edge.node_to.collected, edge.node_to.label)) for edge in node.edges]
-    node.collected = prop(node.nn, sum(incoming))
+    incomings = [prop(edge.nn, hcat(edge.node_to.collected, edge.node_to.label)) for edge in node.edges]
+    attentions_pre = [prop(attender, hcat(node.label, incoming)) for incoming in incomings]
+    attentions = softmax(vcat(attentions_pre...), dims=1)
+    attended = sum([incoming .* attention for (incoming, attention) in zip(incomings, attentions)])
+    node.collected = prop(node.nn, attended)
 
 end
 
 
-update_node_wrt_depths!(node; depth=1) =
+update_node_wrt_depths!(node, attender; depth=1) =
 begin
 
     tree = [[node]] # [ [node], [c1, c2], [c1c1, c1c2, c2c1, c2c2] ]
@@ -186,7 +197,7 @@ begin
 
         for node in level
 
-            update_node_wrt_neighbors!(node)
+            update_node_wrt_neighbors!(node, attender)
 
         end
 
@@ -210,8 +221,14 @@ end
 
 predict_edge(graph, node_from, node_to; depth=1) =
 begin
-    encoding_node_from = update_node_wrt_depths!(node_from,depth=depth)
-    encoding_node_to = update_node_wrt_depths!(node_to,depth=depth)
+    edge = get_edge(graph, node_from, node_to)
+    if edge != nothing
+        old_label = edge.label
+        edge.label = zeros(size(old_label))
+    end
+    encoding_node_from = update_node_wrt_depths!(node_from, graph.attender, depth=depth)
+    encoding_node_to = update_node_wrt_depths!(node_to, graph.attender, depth=depth)
+    edge != nothing ? edge.label = old_label : ()
 
 softmax(prop(graph.predictor, hcat(encoding_node_from, encoding_node_to)))
 end
