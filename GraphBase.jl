@@ -48,7 +48,7 @@ Graph(node_encodings, edge_encodings) = new(
     [],
     [],
     [FeedForward(length(node_encodings)*2, length(node_encodings))],
-    [FeedForward(length(node_encodings)*2, length(node_encodings))],
+    [FeedForward(length(node_encodings)*2, length(edge_encodings))],
     node_encodings,
     edge_encodings,
 )
