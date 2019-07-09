@@ -39,6 +39,7 @@ mutable struct Graph
     unique_nodes::Array{Node}
     unique_edges::Array{Edge}
     attender::Array{FeedForward}
+    #attenders::Array{Array{FeedForward}}
     predictor::Array{FeedForward}
     node_encodings::Dict
     edge_encodings::Dict
@@ -46,8 +47,8 @@ mutable struct Graph
 Graph(node_encodings, edge_encodings) = new(
     [],
     [],
-    [FeedForward(length(node_encodings)*2, length(edge_encodings))],
-    [FeedForward(length(node_encodings)*2, length(edge_encodings))],
+    [FeedForward(length(node_encodings)*2, length(node_encodings))],
+    [FeedForward(length(node_encodings)*2, length(node_encodings))],
     node_encodings,
     edge_encodings,
 )
@@ -166,9 +167,12 @@ update_node_wrt_neighbors!(node, attender) =
 begin
 
     incomings = [prop(edge.nn, hcat(edge.node_to.collected, edge.node_to.label)) for edge in node.edges]
+
     attentions_pre = [prop(attender, hcat(node.label, incoming)) for incoming in incomings]
     attentions = softmax(vcat(attentions_pre...), dims=1)
+
     attended = sum([incoming .* attention for (incoming, attention) in zip(incomings, attentions)])
+
     node.collected = prop(node.nn, attended)
 
 end

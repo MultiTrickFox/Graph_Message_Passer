@@ -1,27 +1,54 @@
 include("API.jl")
 
 
-hm_epochs         = 1_000
-learning_rate     = .01
+hm_epochs         = 1
+learning_rate     = .005
 propogation_depth = 2
 
 
+# graph = build_graph("
+#
+# fox neutral human
+# fox dislikes cat
+# fox likes dog
+#
+# human likes cat
+# human likes dog
+#
+# cat dislikes fox
+# cat dislikes dog
+# cat likes human
+#
+# dog likes human
+# dog likes fox
+# dog dislikes cat
+#
+# ")
 
-graph_string = "
-A is_afraid B
-B is_friend C
-C is_neutral D
-D is_afraid A
-D is_neutral C
-C is_afraid B
-"
+graph = build_graph("
+
+fox likes dog
+fox neutral human
+
+dog likes fox
+dog likes human
+
+human likes dog
+human neutral fox
+
+human likes dog
+human neutral fox
+
+")
+
+for _ in 1:1#500
+
+    train_on!(graph,
+              hm_epochs,
+              depth=propogation_depth,
+              lr=learning_rate)
+
+    # @show ask(graph, "human", "fox")
 
 
-graph = build_graph(graph_string)
-
-train_on!(graph,
-          hm_epochs,
-          depth=propogation_depth,
-          lr=learning_rate)
-
-@show ask(graph, "A", "D")
+end

@@ -1,12 +1,39 @@
 include("GraphBase.jl")
+
 using Random: shuffle
 
 
 build_graph(graph_string) =
 begin
+
     node_encodings = Dict()
     edge_encodings = Dict()
+    unique_node_ctr, unique_edge_ctr = 1, 1
 
+    for statement in split(graph_string, "\n")
+        if statement != ""
+            description_node_from, description_edge, description_node_to = split(statement, " ")
+
+            for description_node in (description_node_from, description_node_to)
+                if !(description_node in keys(node_encodings))
+                    node_encodings[description_node] = "placeholder"
+                    unique_node_ctr +=1
+                end
+            end
+
+            if !(description_edge in keys(edge_encodings))
+                edge_encodings[description_edge] = "placeholder"
+                unique_edge_ctr +=1
+            end
+
+        end
+    end
+
+    label_size_node = length(node_encodings)
+    label_size_edge = length(edge_encodings)
+
+    node_encodings = Dict()
+    edge_encodings = Dict()
     unique_node_ctr, unique_edge_ctr = 1, 1
 
     for statement in split(graph_string, "\n")
