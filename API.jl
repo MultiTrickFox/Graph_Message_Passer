@@ -3,6 +3,15 @@ include("GraphBase.jl")
 using Random: shuffle
 
 
+
+# GLOBALS
+
+hm_attenders = 4
+
+# END
+
+
+
 build_graph(graph_string) =
 begin
 
@@ -57,7 +66,7 @@ begin
         end
     end
 
-    graph = Graph(node_encodings, edge_encodings)
+    graph = Graph(node_encodings, edge_encodings, hm_attenders)
 
     for statement in split(graph_string, "\n")
         if statement != ""

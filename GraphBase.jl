@@ -38,16 +38,15 @@ end
 mutable struct Graph
     unique_nodes::Array{Node}
     unique_edges::Array{Edge}
-    attender::Array{FeedForward}
-    #attenders::Array{Array{FeedForward}}
+    attender::Array{Array{FeedForward}}
     predictor::Array{FeedForward}
     node_encodings::Dict
     edge_encodings::Dict
 
-Graph(node_encodings, edge_encodings) = new(
+Graph(node_encodings, edge_encodings, hm_attenders) = new(
     [],
     [],
-    [FeedForward(length(node_encodings)*2, length(node_encodings))],
+    [[FeedForward(length(node_encodings)*2, length(node_encodings))] for _ in 1:hm_attenders],
     [FeedForward(length(node_encodings)*2, length(edge_encodings))],
     node_encodings,
     edge_encodings,
@@ -168,13 +167,25 @@ begin
 
     incomings = [prop(edge.nn, hcat(edge.node_to.collected, edge.node_to.label)) for edge in node.edges]
 
-    attentions_pre = [prop(attender, hcat(node.label, incoming)) for incoming in incomings]
-    attentions = softmax(vcat(attentions_pre...), dims=1)
-
-    attended = sum([incoming .* attention for (incoming, attention) in zip(incomings, attentions)])
+    attended = pass_from_heads(node, attender, incomings)
 
     node.collected = prop(node.nn, attended)
 
+end
+
+
+pass_from_heads(node, attenders, incomings) =
+begin
+
+    attendeds = []
+    for attender in attenders
+        attentions_pre = [prop(attender, hcat(node.label, incoming)) for incoming in incomings]
+        attentions = softmax(vcat(attentions_pre...), dims=1)
+        attended = sum([incoming .* attention for (incoming, attention) in zip(incomings, attentions)])
+        push!(attendeds, attended)
+    end
+
+sum(attendeds)/length(attenders)
 end
 
 
