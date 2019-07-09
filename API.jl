@@ -4,7 +4,7 @@ using Random: shuffle
 
 
 
-# GLOBALS
+# @ HYPERPARAMS
 
 hm_attenders = 4
 

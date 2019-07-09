@@ -234,6 +234,10 @@ root_node_collected
 end
 
 
+
+# FOLLOWING ARE CALLED BY OUTER MODULES #
+
+
 predict_edge(graph, node_from, node_to; depth=1) =
 begin
     edge = get_edge(graph, node_from, node_to)
@@ -247,3 +251,6 @@ begin
 
 softmax(prop(graph.predictor, hcat(encoding_node_from, encoding_node_to)))
 end
+
+
+encode_nodes(graph; depth=1) = [update_node_wrt_depths!(node, depth) for node in graph.unique_nodes]
