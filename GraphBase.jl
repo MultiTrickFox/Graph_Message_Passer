@@ -166,11 +166,10 @@ update_node_wrt_neighbors!(node, attender) =
 begin
 
     incomings = [prop(edge.nn, hcat(edge.node_to.collected, edge.node_to.label)) for edge in node.edges]
-
     attended = pass_from_heads(node, attender, incomings)
-
     node.collected = prop(node.nn, attended)
 
+attended
 end
 
 
@@ -189,7 +188,7 @@ sum(attendeds)/length(attenders)
 end
 
 
-update_node_wrt_depths!(node, attender; depth=1) =
+update_node_wrt_depths!(node, attender; depth=1) = # TODO : bang or not, look at the whole
 begin
 
     tree = [[node]] # [ [node], [c1, c2], [c1c1, c1c2, c2c1, c2c2] ]
@@ -208,11 +207,13 @@ begin
 
     end
 
+    root_node_attended = 0
+
     for level in reverse(tree)
 
         for node in level
 
-            update_node_wrt_neighbors!(node, attender)
+            root_node_attended = update_node_wrt_neighbors!(node, attender)
 
         end
 
@@ -230,7 +231,7 @@ begin
 
     end
 
-root_node_collected
+root_node_collected, root_node_attended
 end
 
 
@@ -245,12 +246,21 @@ begin
         old_label = edge.label
         edge.label = zeros(size(old_label))
     end
-    encoding_node_from = update_node_wrt_depths!(node_from, graph.attender, depth=depth)
-    encoding_node_to = update_node_wrt_depths!(node_to, graph.attender, depth=depth)
+    encoding_node_from, _ = update_node_wrt_depths!(node_from, graph.attender, depth=depth)
+    encoding_node_to, _ = update_node_wrt_depths!(node_to, graph.attender, depth=depth)
     edge != nothing ? edge.label = old_label : ()
 
 softmax(prop(graph.predictor, hcat(encoding_node_from, encoding_node_to)))
 end
 
 
-encode_nodes(graph; depth=1) = [update_node_wrt_depths!(node, depth) for node in graph.unique_nodes]
+predict_node(graph, node; depth=1) =
+begin
+
+    node_info = node.label
+    node.label = zeros(size(node.label))
+    _, attended = update_node_wrt_depths!(node, graph.attender, depth=depth)
+    node.label = node_info
+
+softmax(attended)
+end

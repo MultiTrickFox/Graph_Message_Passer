@@ -1,8 +1,8 @@
 include("API.jl")
 
 
-hm_epochs         = 1
-learning_rate     = .005
+hm_epochs         = 1_000
+learning_rate     = .05
 propogation_depth = 2
 
 
@@ -41,14 +41,14 @@ human neutral fox
 
 ")
 
-for _ in 1:1#500
+for _ in 1:hm_epochs
 
-    train_on!(graph,
-              hm_epochs,
-              depth=propogation_depth,
-              lr=learning_rate)
+    train_for_edge_prediction!(graph,
+                               1,
+                               depth=propogation_depth,
+                               lr=learning_rate)
 
-    # @show ask(graph, "human", "fox")
+    @show ask_edge(graph, "human", "fox")
 
 
 end

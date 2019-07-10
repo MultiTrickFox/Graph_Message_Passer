@@ -80,7 +80,7 @@ graph
 end
 
 
-train_on!(graph, epochs; depth=1, lr=.001) =
+train_for_edge_prediction!(graph, epochs; depth=1, lr=.001) =
     for ep in 1:epochs
 
         ep_loss = 0
@@ -119,7 +119,7 @@ train_on!(graph, epochs; depth=1, lr=.001) =
     end
 
 
-ask(graph, node_from, node_to; depth=1) =
+ask_edge(graph, node_from, node_to; depth=1) =
 begin
     node_from = get_node(graph, node_from)
     node_to = get_node(graph, node_to)
@@ -130,4 +130,76 @@ begin
             return edge.description
         end
     end
+end
+
+
+train_for_node_prediction!(graph, epochs; depth=1, lr=.001) =
+    for ep in 1:epochs
+
+        ep_loss = 0
+        grads = [zeros(size(getfield(layer, param))) for node in graph.unique_nodes for layer in node.nn for param in fieldnames(typeof(layer))]
+
+        # get grads
+
+        for node in shuffle(graph.unique_nodes)
+
+            result = @diff sum(cross_entropy(node.label, predict_node(graph, node, depth=depth)))
+
+            ep_loss += value(result)
+
+            grads += [grad(result, getfield(layer, param)) == nothing ? zeros(size(getfield(layer, param))) : grad(result, getfield(layer, param)) for node in graph.unique_nodes for layer in node.nn for param in fieldnames(typeof(layer))]
+
+        end
+
+        # update params
+
+        ctr = 0
+        for node in graph.unique_nodes
+            for layer in node.nn
+                for param in fieldnames(typeof(layer))
+                    ctr +=1
+
+                    setfield!(layer, param, Param(getfield(layer, param) - lr * grads[ctr]))
+
+                end
+            end
+        end
+
+        # display
+
+        println("Epoch $(ep) Loss $(ep_loss)")
+
+    end
+
+
+ask_node(graph, question_text, question_subject; depth=1) =
+begin
+
+    question_graph = build_graph(question_text)
+
+    for node_question in question_graph.unique_nodes
+        for node_original in graph.unique_nodes
+            if node_question.description == node_original.description
+                node_question.nn = node_original.nn
+            end
+        end
+    end
+
+    for edge_question in question_graph.unique_edges
+        for edge_original in graph.unique_edges
+            if edge_question.description == edge_original.description
+                edge_question.nn = edge_original.nn
+            end
+        end
+    end
+
+    question_graph.attender = graph.attender
+
+    question_node = get_node(question_graph, question_subject)
+    _, attended = update_node_wrt_depths!(question_node, question_graph.attender, depth=depth)
+
+    picked_node = argmax(attended)[1]
+
+
+graph.unique_nodes[picked_node].description
 end
