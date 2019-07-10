@@ -2,7 +2,7 @@ include("API.jl")
 
 
 hm_epochs         = 1_000
-learning_rate     = .05
+learning_rate     = .5
 propogation_depth = 2
 
 
@@ -25,10 +25,10 @@ human neutral fox
 
 question_text = "
 
-X like human
+X like cat
 X like dog
 
-human like X
+cat like X
 dog like X
 
 "

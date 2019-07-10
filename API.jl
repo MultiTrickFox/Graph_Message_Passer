@@ -198,8 +198,15 @@ begin
     question_node = get_node(question_graph, question_subject)
     _, attended = update_node_wrt_depths!(question_node, question_graph.attender, depth=depth)
 
-    picked_node = argmax(attended)[1]
+    picked_id = argmax(attended)
+    picked_node = nothing
+    for node in graph.unique_nodes
+        if argmax(node.label) == picked_id
+            picked_node = node
+            break
+        end
+    end
 
 
-graph.unique_nodes[picked_node].description
+picked_node.description
 end
