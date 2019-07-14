@@ -2,7 +2,7 @@ include("ModelBase.jl")
 
 
 mutable struct Node
-    nn::Array{FeedForward}
+    nn::Array{FeedForward_I}
     description::String
     label
     edges # ::Array{Edge} # cmon julia u can do circular declaration. u should.
@@ -101,7 +101,7 @@ begin
     end
     if !node_from_in_graph
         # debug ? println("$(description_node_from) not in graph.") : ()
-        node_from = Node([FeedForward(label_size_node, label_size_node)], description_node_from, label_node_from)
+        node_from = Node([FeedForward_I(label_size_node, label_size_node)], description_node_from, label_node_from)
         push!(graph.unique_nodes, node_from)
     end
 
@@ -116,7 +116,7 @@ begin
     end
     if !node_to_in_graph
         # debug ? println("$(description_node_to) not in graph.") : ()
-        node_to = Node([FeedForward(label_size_node, label_size_node)], description_node_to, label_node_to)
+        node_to = Node([FeedForward_I(label_size_node, label_size_node)], description_node_to, label_node_to)
         push!(graph.unique_nodes, node_to)
     end
 
@@ -163,13 +163,15 @@ end
 
 
 update_node_wrt_neighbors!(node, attender) =
-begin
 
-    incomings = [prop(edge.nn, hcat(edge.node_to.collected, edge.node_to.label)) for edge in node.edges]
-    attended = pass_from_heads(node, attender, incomings)
-    node.collected = prop(node.nn, attended)
+    if length(node.edges) > 0
+        incomings = [prop(edge.nn, hcat(edge.node_to.collected, edge.node_to.label)) for edge in node.edges]
+        attended = pass_from_heads(node, attender, incomings)
+        node.collected = prop(node.nn, attended)
+        return attended
+    else
+        return zeros(size(attender[end][end].w))
 
-attended
 end
 
 
@@ -178,8 +180,7 @@ begin
 
     attendeds = []
     for attender in attenders
-        attentions_pre = [prop(attender, hcat(node.label, incoming)) for incoming in incomings]
-        attentions = softmax(vcat(attentions_pre...), dims=1)
+        attentions = softmax(vcat([prop(attender, hcat(node.label, incoming)) for incoming in incomings]...), dims=1)
         attended = sum([incoming .* attention for (incoming, attention) in zip(incomings, attentions)])
         push!(attendeds, attended)
     end

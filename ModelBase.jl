@@ -1,37 +1,17 @@
 using AutoGrad: Param, @diff, value, grad
 
+using LinearAlgebra: I, norm
 
-sigm(x) = 1 / (1 + exp(-x))
-tanh(x) = 2 * sigm(2*x) - 1
-relu(x) = begin @show size(x) ; @show value(x) ; value(x) < 0 ? x : x end # TODO : investigate.
-
-# softmax_vector(vector) =
-# begin
-#     println("size of in vector $(size(vector))")
-#
-#     (exp_vector -> exp_vector./sum(exp_vector))(exp.(vector))
-# end
-#
-#
-# softmax_vectors(vectors) =
-# begin
-#     for vector in vectors
-#         println("vector size $(size(vector))")
-#     end
-#
-#     results = [softmax_vector(vector) for vector in zip(vectors)]
-#
-#
-#     for vector in zip(vectors)
-#
-#         @show value(vector)
-#
-#     end
-#     [softmax_vector(vector) for vector in zip(vectors)]
-# end
 using Knet: softmax
 
 
+Identity(i;scale=1) = zeros(i,i) + I * scale
+
+sigm(x) = 1 / (1 + exp(-x))
+tanh(x) = 2 * sigm(2*x) - 1
+relu(x) = max(0,x)
+
+# softmax(vector) = (exp_vector -> exp_vector./sum(exp_vector))(exp.(vector))
 cross_entropy(label, prediction) = -(label .* log.(prediction))
 mse(label, prediction) = (label - prediction) .^2
 
@@ -86,6 +66,21 @@ end
 (layer::FeedForward)(in) =
 begin
     tanh.(in * layer.w + layer.b)
+end
+
+
+mutable struct FeedForward_I
+    w::Param
+    b::Param
+FeedForward_I(in_size,layer_size) = new(
+    Param(Identity(in_size)),
+    Param(zeros(1,layer_size)),
+)
+end
+
+(layer::FeedForward_I)(in) =
+begin
+    relu.(in * layer.w + layer.b)
 end
 
 
