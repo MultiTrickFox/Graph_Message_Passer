@@ -2,37 +2,40 @@ include("API.jl")
 
 
 hm_epochs         = 1_000
-learning_rate     = .5
+learning_rate     = 0.5
 propogation_depth = 2
 
 
-graph = build_graph("
+training_graph = build_graph("
 
 fox likes dog
 fox neutral human
+fox dislikes cat
 
 dog likes fox
 dog likes human
+dog dislikes cat
 
 human likes dog
 human neutral fox
+human likes cat
 
-human likes dog
-human neutral fox
+cat likes human
+cat dislikes dog
+cat dislikes fox
 
 ")
 
 
-question_text = "
+question_graph = build_graph("
 
-X like cat
-X like dog
+fox likes X
+X likes human
 
-cat like X
-dog like X
+")
 
-"
 
+question_subject = "X"
 
 
 
@@ -40,14 +43,14 @@ dog like X
 
 for _ in 1:hm_epochs
 
-    train_for_node_prediction!(graph,
+
+    train_for_node_prediction!(training_graph,
                                1,
                                lr=learning_rate,
                                depth=propogation_depth)
 
-    @show ask_node(graph, question_text, "X", depth=propogation_depth)
 
-
+    @show predict_node(training_graph, question_graph, question_subject, depth=propogation_depth)
 
 
 end

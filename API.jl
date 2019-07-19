@@ -119,7 +119,7 @@ train_for_edge_prediction!(graph, epochs; depth=1, lr=.001) =
     end
 
 
-ask_edge(graph, node_from, node_to; depth=1) =
+predict_edge(graph, node_from, node_to; depth=1) =
 begin
     node_from = get_node(graph, node_from)
     node_to = get_node(graph, node_to)
@@ -172,15 +172,15 @@ train_for_node_prediction!(graph, epochs; depth=1, lr=.001) =
     end
 
 
-ask_node(graph, question_text, question_subject; depth=1) =
+predict_node(graph, question_graph, question_subject; depth=1) =
 begin
-
-    question_graph = build_graph(question_text)
 
     for node_question in question_graph.unique_nodes
         for node_original in graph.unique_nodes
             if node_question.description == node_original.description
                 node_question.nn = node_original.nn
+                node_question.label = node_original.label
+                node_question.collected = zeros(size(node_question.label))
             end
         end
     end
@@ -189,13 +189,33 @@ begin
         for edge_original in graph.unique_edges
             if edge_question.description == edge_original.description
                 edge_question.nn = edge_original.nn
+                edge_question.label = edge_original.label
             end
         end
     end
 
     question_graph.attender = graph.attender
 
+    size_lbl = length(graph.unique_nodes[1].label)
     question_node = get_node(question_graph, question_subject)
+    question_node.nn = [FeedForward_I(size_lbl, size_lbl)]
+    question_node.label = zeros(1, size_lbl)
+    question_node.collected = zeros(1, size_lbl)
+
+    for node in question_graph.unique_nodes
+        for edge in node.edges
+            for edge2 in question_graph.unique_edges
+                if edge.description == edge2.description
+                    edge.nn = edge2.nn
+                    break
+                end
+            end
+        end
+    end
+
+
+    ###
+
     _, attended = update_node_wrt_depths!(question_node, question_graph.attender, depth=depth)
 
     picked_id = argmax(attended)
