@@ -167,7 +167,7 @@ update_node_wrt_neighbors!(node, attender) =
     if length(node.edges) > 0
         incomings = [prop(edge.nn, hcat(edge.node_to.collected, edge.node_to.label)) for edge in node.edges]
         attended = pass_from_heads(node, attender, incomings)
-        node.collected = prop(node.nn, attended)
+        node.collected += prop(node.nn, attended)
         return attended
     else
         return zeros(size(attender[end][end].w))
