@@ -2,7 +2,7 @@ include("API.jl")
 
 
 hm_epochs         = 1_000
-learning_rate     = 0.5
+learning_rate     = 0.2
 propogation_depth = 2
 
 
@@ -39,10 +39,7 @@ question_subject = "X"
 
 
 
-
-
 for _ in 1:hm_epochs
-
 
     train_for_node_prediction!(training_graph,
                                1,
