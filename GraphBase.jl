@@ -240,8 +240,9 @@ end
 # FOLLOWING ARE CALLED BY OUTER MODULES #
 
 
-predict_edge(graph, node_from, node_to; depth=1) =
+predict_edge(graph, node_from::Node, node_to::Node; depth=1) =
 begin
+
     edge = get_edge(graph, node_from, node_to)
     if edge != nothing
         old_label = edge.label

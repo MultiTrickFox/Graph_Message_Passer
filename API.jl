@@ -119,10 +119,11 @@ train_for_edge_prediction!(graph, epochs; depth=1, lr=.001) =
     end
 
 
-predict_edge(graph, node_from, node_to; depth=1) =
+predict_edge(graph, node_from::String, node_to::String; depth=1) =
 begin
     node_from = get_node(graph, node_from)
     node_to = get_node(graph, node_to)
+
     predicted_id = argmax(predict_edge(graph, node_from, node_to, depth=depth))
 
     for edge in graph.unique_edges
@@ -130,6 +131,7 @@ begin
             return edge.description
         end
     end
+
 end
 
 
