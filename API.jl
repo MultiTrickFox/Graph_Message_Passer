@@ -148,12 +148,16 @@ train_for_edge_prediction!(graph, epochs, lr) =
         grads_attender = [zeros(size(getfield(layer, param))) for layer in graph.attender for param in fieldnames(typeof(layer))]
         grads_predictor = [zeros(size(getfield(layer, param))) for layer in graph.edge_predictor for param in fieldnames(typeof(layer))]
 
-        for edge in shuffle(graph.unique_edges)
-            result = @diff sum(cross_entropy(edge.label, predict_edge(graph, edge.node_from, edge.node_to)))
-            ep_loss += value(result)
-            grads_edge += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for edge in graph.unique_edges for layer in edge.nn for param in fieldnames(typeof(layer))]
-            grads_attender += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for layer in graph.attender for param in fieldnames(typeof(layer))]
-            grads_predictor += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for layer in graph.edge_predictor for param in fieldnames(typeof(layer))]
+        for node_from in graph.unique_nodes
+            for node_to in graph.unique_nodes
+                if (edge = get_edge(graph,node_from,node_to)) != nothing
+                    result = @diff sum(cross_entropy(edge.label, predict_edge(graph, node_from, node_to)))
+                    ep_loss += value(result)
+                    grads_edge += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for edge in graph.unique_edges for layer in edge.nn for param in fieldnames(typeof(layer))]
+                    grads_attender += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for layer in graph.attender for param in fieldnames(typeof(layer))]
+                    grads_predictor += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for layer in graph.edge_predictor for param in fieldnames(typeof(layer))]
+                end
+            end
         end
 
         for edge in graph.unique_edges
@@ -177,6 +181,23 @@ train_for_edge_prediction!(graph, epochs, lr) =
         println("Epoch $(ep) Loss $(ep_loss)")
 
     end
+
+test_for_edge_prediction(graph) =
+begin
+
+    count = 0
+    count2 = 0
+    for node_from in graph.unique_nodes
+        for node_to in graph.unique_nodes
+            if (edge = get_edge(graph,node_from,node_to)) != nothing
+                count2 +=1
+                argmax(predict_edge(graph, node_from, node_to)) == argmax(edge.label) ? count+=1 : ()
+            end
+        end
+    end
+
+count/count2
+end
 
 predict_edge(graph, node_from::String, node_to::String) =
 begin
@@ -232,6 +253,17 @@ train_for_node_prediction!(graph, epochs, lr) =
         println("Epoch $(ep) Loss $(ep_loss)")
 
     end
+
+test_for_node_prediction(graph) =
+begin
+
+    count = 0
+    for node in graph.unique_nodes
+        argmax(predict_node(graph, node)) == argmax(node.label) ? count+=1 : ()
+    end
+
+count/length(graph.unique_nodes)
+end
 
 predict_node(graph, question_graph) =
 begin

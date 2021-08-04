@@ -55,23 +55,16 @@ Graph(node_encodings, edge_encodings) = new(
 end
 
 
-get_node(graph, node_description) =
+get_node(graph, node_description::String) =
     for node in graph.unique_nodes
         if node.description == node_description
             return node
         end
     end
 
-get_edge(graph, edge_description::String) =
-    for edge in graph.unique_edges
-        if edge.description == edge_description
-            return edge
-        end
-    end
-
 get_edge(graph, node_from::Node, node_to::Node) =
-    for edge in graph.unique_edges
-        if edge.node_from == node_from && edge.node_to == node_to
+    for edge in node_from.edges
+        if edge.node_to == node_to
             return edge
         end
     end

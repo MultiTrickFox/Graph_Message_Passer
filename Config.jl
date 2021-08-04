@@ -1,4 +1,4 @@
-propogation_depth = 2
+propogation_depth = 1
 message_size      = 3
 
 hm_epochs         = 100
