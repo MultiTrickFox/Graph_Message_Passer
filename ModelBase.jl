@@ -65,7 +65,7 @@ end
 
 (layer::FeedForward)(in) =
 begin
-    tanh.(in * layer.w) # + layer.b)
+    in * layer.w # + layer.b)
 end
 
 
@@ -84,11 +84,10 @@ begin
 end
 
 
-prop(model, in) =
+prop(model, in; act="tanh") =
 begin
     for layer in model
         in = layer(in)
     end
-
 in
 end

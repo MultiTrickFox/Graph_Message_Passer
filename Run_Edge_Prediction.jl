@@ -20,7 +20,7 @@ human likes cat
 
 for _ in 1:hm_epochs
 
-    @show predict_edge(graph, "human", "cat", depth=propogation_depth)
+    @show predict_edge(graph, "human", "cat")
 
     train_for_edge_prediction!(graph,
                                1,

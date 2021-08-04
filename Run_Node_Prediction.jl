@@ -35,7 +35,7 @@ X likes human
 
 for _ in 1:hm_epochs
 
-    @show predict_node(training_graph, question_graph, depth=propogation_depth)
+    @show predict_node(training_graph, question_graph)
     # @show embed_node(training_graph, "fox")
 
     train_for_node_prediction!(training_graph,

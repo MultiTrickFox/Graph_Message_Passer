@@ -1,4 +1,5 @@
 include("GraphBase.jl")
+include("Config.jl")
 
 using Random: shuffle
 
@@ -57,7 +58,7 @@ begin
         end
     end
 
-    graph = Graph(node_encodings, edge_encodings, hm_attenders)
+    graph = Graph(node_encodings, edge_encodings)
 
     for statement in split(graph_string, "\n")
         if statement != ""
@@ -116,7 +117,7 @@ begin
             break
         end
     end
-    edge_in_graph ? () : edge_nn = [FeedForward(label_size_node*2, label_size_node)]
+    edge_in_graph ? () : edge_nn = [FeedForward(label_size_node+message_size, message_size)]
 
     if bi_direc
 
@@ -144,14 +145,14 @@ train_for_edge_prediction!(graph, epochs, lr) =
 
         ep_loss = 0
         grads_edge = [zeros(size(getfield(layer, param))) for edge in graph.unique_edges for layer in edge.nn for param in fieldnames(typeof(layer))]
-        grads_attender = [zeros(size(getfield(layer, param))) for head in graph.attender for layer in head for param in fieldnames(typeof(layer))]
+        grads_attender = [zeros(size(getfield(layer, param))) for layer in graph.attender for param in fieldnames(typeof(layer))]
         grads_predictor = [zeros(size(getfield(layer, param))) for layer in graph.edge_predictor for param in fieldnames(typeof(layer))]
 
         for edge in shuffle(graph.unique_edges)
             result = @diff sum(cross_entropy(edge.label, predict_edge(graph, edge.node_from, edge.node_to)))
             ep_loss += value(result)
             grads_edge += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for edge in graph.unique_edges for layer in edge.nn for param in fieldnames(typeof(layer))]
-            grads_attender += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for head in graph.attender for layer in head for param in fieldnames(typeof(layer))]
+            grads_attender += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for layer in graph.attender for param in fieldnames(typeof(layer))]
             grads_predictor += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for layer in graph.edge_predictor for param in fieldnames(typeof(layer))]
         end
 
@@ -162,11 +163,9 @@ train_for_edge_prediction!(graph, epochs, lr) =
                 end
             end
         end
-        for head in graph.attender
-            for layer in head
-                for (param,grad) in zip(fieldnames(typeof(layer)),grads_attender)
-                    setfield!(layer, param, Param(getfield(layer, param) -lr*grad))
-                end
+        for layer in graph.attender
+            for (param,grad) in zip(fieldnames(typeof(layer)),grads_attender)
+                setfield!(layer, param, Param(getfield(layer, param) -lr*grad))
             end
         end
         for layer in graph.edge_predictor
@@ -202,14 +201,14 @@ train_for_node_prediction!(graph, epochs, lr) =
 
         ep_loss = 0
         grads_edge = [zeros(size(getfield(layer, param))) for edge in graph.unique_edges for layer in edge.nn for param in fieldnames(typeof(layer))]
-        grads_attender = [zeros(size(getfield(layer, param))) for head in graph.attender for layer in head for param in fieldnames(typeof(layer))]
+        grads_attender = [zeros(size(getfield(layer, param))) for layer in graph.attender for param in fieldnames(typeof(layer))]
         grads_predictor = [zeros(size(getfield(layer, param))) for layer in graph.node_predictor for param in fieldnames(typeof(layer))]
 
         for node in shuffle(graph.unique_nodes)
             result = @diff sum(cross_entropy(node.label, predict_node(graph, node)))
             ep_loss += value(result)
             grads_edge += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for edge in graph.unique_edges for layer in edge.nn for param in fieldnames(typeof(layer))]
-            grads_attender += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for head in graph.attender for layer in head for param in fieldnames(typeof(layer))]
+            grads_attender += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for layer in graph.attender for param in fieldnames(typeof(layer))]
             grads_predictor += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for layer in graph.node_predictor for param in fieldnames(typeof(layer))]
         end
 
@@ -220,11 +219,9 @@ train_for_node_prediction!(graph, epochs, lr) =
                 end
             end
         end
-        for head in graph.attender
-            for layer in head
-                for (param,grad) in zip(fieldnames(typeof(layer)),grads_attender)
-                    setfield!(layer, param, Param(getfield(layer, param) -lr*grad))
-                end
+        for layer in graph.attender
+            for (param,grad) in zip(fieldnames(typeof(layer)),grads_attender)
+                setfield!(layer, param, Param(getfield(layer, param) -lr*grad))
             end
         end
         for layer in graph.node_predictor
@@ -259,7 +256,6 @@ begin
         for node_original in graph.unique_nodes
             if node_question.description == node_original.description
                 node_question.label = node_original.label
-                node_question.collected = zeros(size(node_question.label))
                 break
             end
         end
@@ -275,23 +271,19 @@ begin
         end
     end
 
-    size_lbl = length(graph.unique_nodes[1].label)
     question_node = get_node(question_graph, question_subject)
-    question_node.label = zeros(1, size_lbl)
-    question_node.collected = zeros(1, size_lbl)
+    question_node.label = zeros(size(graph.unique_nodes[1].label))
 
     question_node_collected = update_node_wrt_depths(question_node, graph.attender)
 
-    picked_id = argmax(prop(graph.node_predictor, question_node_collected))
-    picked_node = nothing
+    predicted_id = argmax(prop(graph.node_predictor, question_node_collected))
+
     for node in graph.unique_nodes
-        if argmax(node.label) == picked_id
-            picked_node = node
-            break
+        if argmax(node.label) == predicted_id
+            return node.description
         end
     end
 
-picked_node.description
 end
 
 embed_node(graph, node::String) =

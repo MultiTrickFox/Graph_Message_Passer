@@ -12,7 +12,7 @@ Node(description, label, edges=[]) = new(
     description,
     label,
     edges,
-    zeros(size(label))
+    zeros(1, message_size)
 )
 end
 
@@ -37,18 +37,18 @@ end
 mutable struct Graph
     unique_nodes::Array{Node}
     unique_edges::Array{Edge}
-    attender::Array{Array{FeedForward}}
+    attender::Array{FeedForward}
     edge_predictor::Array{FeedForward}
     node_predictor::Array{FeedForward}
     node_encodings::Dict
     edge_encodings::Dict
 
-Graph(node_encodings, edge_encodings, hm_attenders) = new(
+Graph(node_encodings, edge_encodings) = new(
     [],
     [],
-    [[FeedForward(length(node_encodings)+length(edge_encodings), length(node_encodings))] for _ in 1:attender_heads],
-    [FeedForward(length(node_encodings)*2, length(edge_encodings))],
-    [FeedForward(length(node_encodings), length(node_encodings))],
+    [FeedForward(length(edge_encodings), 1)],
+    [FeedForward(message_size*2, length(edge_encodings))],
+    [FeedForward(message_size, length(node_encodings))],
     node_encodings,
     edge_encodings,
 )
@@ -82,22 +82,10 @@ neighbors_of(node) = [edge.node_to for edge in node.edges]
 update_node_wrt_neighbors!(node, attender) =
 
     if length(node.edges) > 0
-        incomings = [prop(edge.nn, hcat(edge.node_to.collected, edge.node_to.label)) for edge in node.edges]
-        node.collected = attend(node, attender, incomings)
+        incomings = vcat([prop(edge.nn, hcat(edge.node_to.collected, edge.node_to.label)) for edge in node.edges if sum(edge.label) != 0 && sum(edge.node_to.label) != 0]...)
+        attentions = softmax(vcat([prop(attender, edge.label) for edge in node.edges if sum(edge.label) != 0 && sum(edge.node_to.label) != 0]...), dims=1)
+        node.collected = sum(incomings .* attentions, dims=1)
 
-end
-
-attend(node, attenders, incomings) =
-begin
-
-    attendeds = []
-    for attender in attenders
-        attentions = softmax(vcat([prop(attender, hcat(edge.label, incoming)) for (incoming,edge) in zip(incomings,node.edges)]...), dims=1)
-        attended = sum([incoming .* attention for (incoming, attention) in zip(incomings, attentions)])
-        push!(attendeds, attended)
-    end
-
-sum(attendeds)/length(attenders)
 end
 
 
@@ -108,7 +96,7 @@ begin
     for _ in 1:propogation_depth-1
         level = []
         for node in tree[end]
-            for neighbor in neighbors_of(node)
+            for neighbor in [edge.node_to for edge in node.edges if sum(edge.label) != 0 && sum(edge.node_to.label) != 0]
                 neighbor in level ? () : push!(level, neighbor)
             end
         end
@@ -124,7 +112,7 @@ begin
 
     for level in tree
         for node in level
-            node.collected = zeros(size(node.label))
+            node.collected = zeros(1, message_size)
         end
     end
 
@@ -151,10 +139,10 @@ end
 predict_node(graph, node::Node) =
 begin
 
-    node_info = node.label
+    old_label = node.label
     node.label = zeros(size(node.label))
     node_collected = update_node_wrt_depths(node, graph.attender)
-    node.label = node_info
+    node.label = old_label
 
 softmax(prop(graph.node_predictor, node_collected))
 end
