@@ -2,7 +2,7 @@ include("GraphBase.jl")
 include("Config.jl")
 
 using Random: shuffle
-using Combinatorics: permutations
+using LinearAlgebra: norm
 
 
 build_graph(graph_string) =
@@ -333,8 +333,9 @@ embed_node(graph, node::String) =
     embed_node(get_node(graph,node))
 
 
-similarity(embedding1, embedding2) =
-    sum(abs.(embedding1 .- embedding2))
+similarity(embedding1, embedding2; cosine=true) =
+    cosine ? sum(embedding1.*embedding2)/(norm(embedding1)*norm(embedding2)) :
+        sqrt(sum((embedding1.-embedding2).^2))
 
 similarity(graph, node1, node2) =
     similarity(embed_node(graph,node1), embed_node(graph,node2))
@@ -345,14 +346,23 @@ begin
 
     scores = Dict()
 
-    for (node_from,node_to) in permutations(graph.unique_nodes,2)
-        if (edge = get_edge(graph,node_from,node_to)) != nothing
-            scores[edge] = similarity(graph, node_from, node_to)
+    for node_from in graph.unique_nodes
+        for node_to in graph.unique_nodes
+            already_calculated = false
+            for (k,v) in scores
+                if k.node_from == node_to && k.node_to == node_from
+                    already_calculated = true
+                    break
+                end
+            end
+            if !already_calculated && (edge = get_edge(graph,node_from,node_to)) != nothing
+                scores[edge] = similarity(graph, node_from, node_to)
+            end
         end
     end
 
     for (k,v) in sort(scores; byvalue=true)
-        println("$(k.node_from.description) -> $(k.node_to.description) = $(v)")
+        println("$(k.node_from.description) <-> $(k.node_to.description) = $(v)")
     end
 
 end

@@ -3,7 +3,7 @@ include("Config.jl")
 
 
 
-training_graph = build_graph("
+graph = build_graph("
 
 fox likes dog
 fox neutral human
@@ -35,17 +35,14 @@ X likes human
 
 for _ in 1:hm_epochs
 
-    # @show predict_node(training_graph, question_graph)
-    # @show embed_node(training_graph, "fox")
+    # @show predict_node(graph, question_graph)
+    # @show embed_node(graph, "fox")
+    @show test_for_node_prediction(graph)
 
-    @show test_for_node_prediction(training_graph)
-
-    train_for_node_prediction!(training_graph,
-                               1,
-                               learning_rate
-                               )
+    train_for_node_prediction!(graph, 1,learning_rate)
 
 end
 
-
+println(" ")
+display_similarities(graph)
 println(" ")

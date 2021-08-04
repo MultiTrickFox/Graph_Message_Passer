@@ -29,15 +29,12 @@ for _ in 1:hm_epochs
 
     # @show predict_edge(graph, "human", "dog")
     # @show embed_node(training_graph, "fox")
-
     @show test_for_edge_prediction(graph)
 
-    train_for_edge_prediction!(graph,
-                               1,
-                               learning_rate
-                               )
+    train_for_edge_prediction!(graph, 1, learning_rate)
 
 end
 
-
+println(" ")
+display_similarities(graph)
 println(" ")

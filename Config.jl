@@ -1,5 +1,5 @@
-propogation_depth = 1
+propogation_depth = 2
 message_size      = 3
 
 hm_epochs         = 100
-learning_rate     = .5
+learning_rate     = .2
