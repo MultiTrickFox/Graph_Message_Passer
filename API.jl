@@ -185,7 +185,6 @@ begin
     node_to = get_node(graph, node_to)
 
     predicted_id = argmax(predict_edge(graph, node_from, node_to))
-
     for edge in graph.unique_edges
         if argmax(edge.label) == predicted_id
             return edge.description
@@ -277,7 +276,6 @@ begin
     question_node_collected = update_node_wrt_depths(question_node, graph.attender)
 
     predicted_id = argmax(prop(graph.node_predictor, question_node_collected))
-
     for node in graph.unique_nodes
         if argmax(node.label) == predicted_id
             return node.description
@@ -285,6 +283,7 @@ begin
     end
 
 end
+
 
 embed_node(graph, node::String) =
 begin

@@ -87,7 +87,7 @@ end
 prop(model, in; act="tanh") =
 begin
     for layer in model
-        in = layer(in)
+        in = tanh.(layer(in))
     end
 in
 end
