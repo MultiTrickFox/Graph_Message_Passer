@@ -3,15 +3,6 @@ include("GraphBase.jl")
 using Random: shuffle
 
 
-
-# @ HYPERPARAMS
-
-hm_attenders = 2
-
-# END
-
-
-
 build_graph(graph_string) =
 begin
 
@@ -147,7 +138,7 @@ node_from, node_to
 end
 
 
-train_for_edge_prediction!(graph, epochs; depth=1, lr=.001) =
+train_for_edge_prediction!(graph, epochs, lr) =
 
     for ep in 1:epochs
 
@@ -157,7 +148,7 @@ train_for_edge_prediction!(graph, epochs; depth=1, lr=.001) =
         grads_predictor = [zeros(size(getfield(layer, param))) for layer in graph.edge_predictor for param in fieldnames(typeof(layer))]
 
         for edge in shuffle(graph.unique_edges)
-            result = @diff sum(cross_entropy(edge.label, predict_edge(graph, edge.node_from, edge.node_to, depth=depth)))
+            result = @diff sum(cross_entropy(edge.label, predict_edge(graph, edge.node_from, edge.node_to)))
             ep_loss += value(result)
             grads_edge += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for edge in graph.unique_edges for layer in edge.nn for param in fieldnames(typeof(layer))]
             grads_attender += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for head in graph.attender for layer in head for param in fieldnames(typeof(layer))]
@@ -188,13 +179,13 @@ train_for_edge_prediction!(graph, epochs; depth=1, lr=.001) =
 
     end
 
-predict_edge(graph, node_from::String, node_to::String; depth=1) =
+predict_edge(graph, node_from::String, node_to::String) =
 begin
 
     node_from = get_node(graph, node_from)
     node_to = get_node(graph, node_to)
 
-    predicted_id = argmax(predict_edge(graph, node_from, node_to, depth=depth))
+    predicted_id = argmax(predict_edge(graph, node_from, node_to))
 
     for edge in graph.unique_edges
         if argmax(edge.label) == predicted_id
@@ -205,7 +196,7 @@ begin
 end
 
 
-train_for_node_prediction!(graph, epochs; depth=1, lr=.001) =
+train_for_node_prediction!(graph, epochs, lr) =
 
     for ep in 1:epochs
 
@@ -215,7 +206,7 @@ train_for_node_prediction!(graph, epochs; depth=1, lr=.001) =
         grads_predictor = [zeros(size(getfield(layer, param))) for layer in graph.node_predictor for param in fieldnames(typeof(layer))]
 
         for node in shuffle(graph.unique_nodes)
-            result = @diff sum(cross_entropy(node.label, predict_node(graph, node, depth=depth)))
+            result = @diff sum(cross_entropy(node.label, predict_node(graph, node)))
             ep_loss += value(result)
             grads_edge += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for edge in graph.unique_edges for layer in edge.nn for param in fieldnames(typeof(layer))]
             grads_attender += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for head in graph.attender for layer in head for param in fieldnames(typeof(layer))]
@@ -246,7 +237,7 @@ train_for_node_prediction!(graph, epochs; depth=1, lr=.001) =
 
     end
 
-predict_node(graph, question_graph; depth=1) =
+predict_node(graph, question_graph) =
 begin
 
     question_subject = nothing
@@ -289,7 +280,7 @@ begin
     question_node.label = zeros(1, size_lbl)
     question_node.collected = zeros(1, size_lbl)
 
-    question_node_collected = update_node_wrt_depths(question_node, graph.attender, depth=depth)
+    question_node_collected = update_node_wrt_depths(question_node, graph.attender)
 
     picked_id = argmax(prop(graph.node_predictor, question_node_collected))
     picked_node = nothing
@@ -301,4 +292,16 @@ begin
     end
 
 picked_node.description
+end
+
+embed_node(graph, node::String) =
+begin
+
+    node = get_node(graph, node)
+    node_label = node.label
+    node.label = zeros(size(node_label))
+    node_collected = update_node_wrt_depths(node, graph.attender)
+    node.label = node_label
+
+node_collected
 end

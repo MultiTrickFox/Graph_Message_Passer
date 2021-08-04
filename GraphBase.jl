@@ -1,4 +1,5 @@
 include("ModelBase.jl")
+include("Config.jl")
 
 
 mutable struct Node
@@ -45,7 +46,7 @@ mutable struct Graph
 Graph(node_encodings, edge_encodings, hm_attenders) = new(
     [],
     [],
-    [[FeedForward(length(node_encodings)+length(edge_encodings), length(node_encodings))] for _ in 1:hm_attenders],
+    [[FeedForward(length(node_encodings)+length(edge_encodings), length(node_encodings))] for _ in 1:attender_heads],
     [FeedForward(length(node_encodings)*2, length(edge_encodings))],
     [FeedForward(length(node_encodings), length(node_encodings))],
     node_encodings,
@@ -100,11 +101,11 @@ sum(attendeds)/length(attenders)
 end
 
 
-update_node_wrt_depths(node, attender; depth=1) =
+update_node_wrt_depths(node, attender) =
 begin
 
     tree = [[node]] # [ [node], [c1, c2], [c1c1, c1c2, c2c1, c2c2] ]
-    for _ in 1:depth-1
+    for _ in 1:propogation_depth-1
         level = []
         for node in tree[end]
             for neighbor in neighbors_of(node)
@@ -131,7 +132,7 @@ root_node_collected
 end
 
 
-predict_edge(graph, node_from::Node, node_to::Node; depth=1) =
+predict_edge(graph, node_from::Node, node_to::Node) =
 begin
 
     edge = get_edge(graph, node_from, node_to)
@@ -139,20 +140,20 @@ begin
         old_label = edge.label
         edge.label = zeros(size(old_label))
     end
-    node_from_collected = update_node_wrt_depths(node_from, graph.attender, depth=depth)
-    node_to_collected = update_node_wrt_depths(node_to, graph.attender, depth=depth)
+    node_from_collected = update_node_wrt_depths(node_from, graph.attender)
+    node_to_collected = update_node_wrt_depths(node_to, graph.attender)
     edge != nothing ? edge.label = old_label : ()
 
 softmax(prop(graph.edge_predictor, hcat(node_from_collected, node_to_collected)))
 end
 
 
-predict_node(graph, node::Node; depth=1) =
+predict_node(graph, node::Node) =
 begin
 
     node_info = node.label
     node.label = zeros(size(node.label))
-    node_collected = update_node_wrt_depths(node, graph.attender, depth=depth)
+    node_collected = update_node_wrt_depths(node, graph.attender)
     node.label = node_info
 
 softmax(prop(graph.node_predictor, node_collected))

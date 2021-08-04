@@ -1,9 +1,6 @@
 include("API.jl")
+include("Config.jl")
 
-
-hm_epochs         = 100
-learning_rate     = .5
-propogation_depth = 2
 
 
 training_graph = build_graph("
@@ -39,11 +36,12 @@ X likes human
 for _ in 1:hm_epochs
 
     @show predict_node(training_graph, question_graph, depth=propogation_depth)
+    # @show embed_node(training_graph, "fox")
 
     train_for_node_prediction!(training_graph,
                                1,
-                               lr=learning_rate,
-                               depth=propogation_depth)
+                               learning_rate
+                               )
 
 end
 

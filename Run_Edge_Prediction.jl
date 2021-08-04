@@ -1,9 +1,6 @@
 include("API.jl")
+include("Config.jl")
 
-
-hm_epochs         = 100
-learning_rate     = .5
-propogation_depth = 2
 
 
 graph = build_graph("
@@ -27,8 +24,8 @@ for _ in 1:hm_epochs
 
     train_for_edge_prediction!(graph,
                                1,
-                               depth=propogation_depth,
-                               lr=learning_rate)
+                               learning_rate
+                               )
 
 end
 
