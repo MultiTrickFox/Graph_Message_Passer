@@ -1,7 +1,7 @@
 include("API.jl")
 
 
-hm_epochs         = 1_000
+hm_epochs         = 100
 learning_rate     = .5
 propogation_depth = 2
 
@@ -15,6 +15,7 @@ dog likes fox
 dog likes human
 
 human likes dog
+human likes cat
 
 ")
 
@@ -22,13 +23,14 @@ human likes dog
 
 for _ in 1:hm_epochs
 
+    @show predict_edge(graph, "human", "cat", depth=propogation_depth)
+
     train_for_edge_prediction!(graph,
                                1,
                                depth=propogation_depth,
                                lr=learning_rate)
 
-
-    @show predict_edge(graph, "human", "fox", depth=propogation_depth)
-
-
 end
+
+
+println(" ")

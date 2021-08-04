@@ -1,8 +1,8 @@
 include("API.jl")
 
 
-hm_epochs         = 1_000
-learning_rate     = 0.2
+hm_epochs         = 100
+learning_rate     = .5
 propogation_depth = 2
 
 
@@ -35,19 +35,17 @@ X likes human
 ")
 
 
-question_subject = "X"
-
-
 
 for _ in 1:hm_epochs
+
+    @show predict_node(training_graph, question_graph, depth=propogation_depth)
 
     train_for_node_prediction!(training_graph,
                                1,
                                lr=learning_rate,
                                depth=propogation_depth)
 
-
-    @show predict_node(training_graph, question_graph, question_subject, depth=propogation_depth)
-
-
 end
+
+
+println(" ")

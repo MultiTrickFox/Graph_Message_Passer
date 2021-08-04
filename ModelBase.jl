@@ -10,8 +10,8 @@ Identity(i;scale=1) = zeros(i,i) + I * scale
 sigm(x) = 1 / (1 + exp(-x))
 tanh(x) = 2 * sigm(2*x) - 1
 relu(x) = max(0,x)
-
 # softmax(vector) = (exp_vector -> exp_vector./sum(exp_vector))(exp.(vector))
+
 cross_entropy(label, prediction) = -(label .* log.(prediction))
 mse(label, prediction) = (label - prediction) .^2
 
@@ -56,31 +56,31 @@ end
 
 mutable struct FeedForward
     w::Param
-    b::Param
+    # b::Param
 FeedForward(in_size,layer_size) = new(
     Param(randn(in_size,layer_size)),
-    Param(zeros(1,layer_size)),
+    # Param(zeros(1,layer_size)),
 )
 end
 
 (layer::FeedForward)(in) =
 begin
-    tanh.(in * layer.w + layer.b)
+    tanh.(in * layer.w) # + layer.b)
 end
 
 
 mutable struct FeedForward_I
     w::Param
-    b::Param
+    # b::Param
 FeedForward_I(in_size,layer_size) = new(
     Param(Identity(in_size)),
-    Param(zeros(1,layer_size)),
+    # Param(zeros(1,layer_size)),
 )
 end
 
 (layer::FeedForward_I)(in) =
 begin
-    relu.(in * layer.w + layer.b)
+    relu.(in * layer.w) # + layer.b)
 end
 
 
