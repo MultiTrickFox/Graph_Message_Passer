@@ -2,6 +2,7 @@ include("GraphBase.jl")
 include("Config.jl")
 
 using Random: shuffle
+using Combinatorics: permutations
 
 
 build_graph(graph_string) =
@@ -317,14 +318,41 @@ begin
 end
 
 
-embed_node(graph, node::String) =
+embed_node(graph, node::Node) =
 begin
 
-    node = get_node(graph, node)
     node_label = node.label
     node.label = zeros(size(node_label))
     node_collected = update_node_wrt_depths(node, graph.attender)
     node.label = node_label
 
 node_collected
+end
+
+embed_node(graph, node::String) =
+    embed_node(get_node(graph,node))
+
+
+similarity(embedding1, embedding2) =
+    sum(abs.(embedding1 .- embedding2))
+
+similarity(graph, node1, node2) =
+    similarity(embed_node(graph,node1), embed_node(graph,node2))
+
+
+display_similarities(graph) =
+begin
+
+    scores = Dict()
+
+    for (node_from,node_to) in permutations(graph.unique_nodes,2)
+        if (edge = get_edge(graph,node_from,node_to)) != nothing
+            scores[edge] = similarity(graph, node_from, node_to)
+        end
+    end
+
+    for (k,v) in sort(scores; byvalue=true)
+        println("$(k.node_from.description) -> $(k.node_to.description) = $(v)")
+    end
+
 end
