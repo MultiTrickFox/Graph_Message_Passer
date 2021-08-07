@@ -87,12 +87,11 @@ end
 
 update_node_wrt_neighbors!(node, attender) =
 
-    if length(node.edges) > 0
+    if any([edge.label != nothing && edge.node_to.label != nothing for edge in node.edges])
         incomings = vcat([prop(edge.nn, hcat(edge.node_to.collected, edge.node_to.label)) for edge in node.edges if edge.label != nothing && edge.node_to.label != nothing]...)
         attentions = softmax(vcat([prop(attender, edge.label) for edge in node.edges if edge.label != nothing && edge.node_to.label != nothing]...), dims=1)
         node.collected = sum(incomings .* attentions, dims=1)
-
-end
+    end
 
 
 update_node_wrt_depths(node, attender) =
