@@ -27,8 +27,8 @@ cat dislikes fox
 
 for _ in 1:hm_epochs
 
-    # @show predict_edge(graph, "human", "dog")
-    # @show embed_node(training_graph, "fox")
+    # predict_edge(graph, "human", "dog")
+    # embed_node(training_graph, "fox")
     @show test_for_edge_prediction(graph)
 
     train_for_edge_prediction!(graph, 1, learning_rate)

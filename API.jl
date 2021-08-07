@@ -133,7 +133,7 @@ node_from, node_to
 end
 
 
-train_for_edge_prediction!(graph, epochs, lr, edges=all_edges(graph)) =
+train_for_edge_prediction!(graph, epochs, lr; edges=all_edges(graph)) =
 
     for ep in 1:epochs
 
@@ -172,7 +172,7 @@ train_for_edge_prediction!(graph, epochs, lr, edges=all_edges(graph)) =
 
     end
 
-test_for_edge_prediction(graph, edges=all_edges(graph)) =
+test_for_edge_prediction(graph; edges=all_edges(graph)) =
 begin
 
     count = 0
@@ -199,7 +199,7 @@ begin
 end
 
 
-train_for_node_prediction!(graph, epochs, lr, nodes=graph.unique_nodes) =
+train_for_node_prediction!(graph, epochs, lr; nodes=graph.unique_nodes) =
 
     for ep in 1:epochs
 
@@ -238,7 +238,7 @@ train_for_node_prediction!(graph, epochs, lr, nodes=graph.unique_nodes) =
 
     end
 
-test_for_node_prediction(graph, nodes=graph.unique_nodes) =
+test_for_node_prediction(graph; nodes=graph.unique_nodes) =
 begin
 
     count = 0

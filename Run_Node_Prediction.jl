@@ -35,8 +35,8 @@ X likes human
 
 for _ in 1:hm_epochs
 
-    # @show predict_node(graph, question_graph)
-    # @show embed_node(graph, "fox")
+    # predict_node(graph, question_graph)
+    # embed_node(graph, "fox")
     @show test_for_node_prediction(graph)
 
     train_for_node_prediction!(graph, 1, learning_rate)
