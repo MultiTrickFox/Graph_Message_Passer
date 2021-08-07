@@ -71,12 +71,25 @@ get_edge(graph, node_from::Node, node_to::Node) =
 
 neighbors_of(node) = [edge.node_to for edge in node.edges]
 
+all_edges(graph) =
+begin
+
+    edges = []
+    for node_from in graph.unique_nodes
+        for node_to in graph.unique_nodes
+            (edge = get_edge(graph,node_from,node_to)) != nothing ? push!(edges,edge) : ()
+        end
+    end
+
+edges
+end
+
 
 update_node_wrt_neighbors!(node, attender) =
 
     if length(node.edges) > 0
-        incomings = vcat([prop(edge.nn, hcat(edge.node_to.collected, edge.node_to.label)) for edge in node.edges if sum(edge.label) != 0 && sum(edge.node_to.label) != 0]...)
-        attentions = softmax(vcat([prop(attender, edge.label) for edge in node.edges if sum(edge.label) != 0 && sum(edge.node_to.label) != 0]...), dims=1)
+        incomings = vcat([prop(edge.nn, hcat(edge.node_to.collected, edge.node_to.label)) for edge in node.edges if edge.label != nothing && edge.node_to.label != nothing]...)
+        attentions = softmax(vcat([prop(attender, edge.label) for edge in node.edges if edge.label != nothing && edge.node_to.label != nothing]...), dims=1)
         node.collected = sum(incomings .* attentions, dims=1)
 
 end
@@ -89,7 +102,7 @@ begin
     for _ in 1:propogation_depth-1
         level = []
         for node in tree[end]
-            for neighbor in [edge.node_to for edge in node.edges if sum(edge.label) != 0 && sum(edge.node_to.label) != 0]
+            for neighbor in [edge.node_to for edge in node.edges if edge.label != nothing && edge.node_to.label != nothing]
                 neighbor in level ? () : push!(level, neighbor)
             end
         end
@@ -119,7 +132,7 @@ begin
     edge = get_edge(graph, node_from, node_to)
     if edge != nothing
         old_label = edge.label
-        edge.label = zeros(size(old_label))
+        edge.label = nothing
     end
     node_from_collected = update_node_wrt_depths(node_from, graph.attender)
     node_to_collected = update_node_wrt_depths(node_to, graph.attender)
@@ -133,7 +146,7 @@ predict_node(graph, node::Node) =
 begin
 
     old_label = node.label
-    node.label = zeros(size(node.label))
+    node.label = nothing
     node_collected = update_node_wrt_depths(node, graph.attender)
     node.label = old_label
 

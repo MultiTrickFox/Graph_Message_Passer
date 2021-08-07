@@ -36,5 +36,5 @@ for _ in 1:hm_epochs
 end
 
 println(" ")
-display_similarities(graph)
-println(" ")
+# display_similarities(graph)
+# println(" ")

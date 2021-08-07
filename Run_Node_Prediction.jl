@@ -39,10 +39,10 @@ for _ in 1:hm_epochs
     # @show embed_node(graph, "fox")
     @show test_for_node_prediction(graph)
 
-    train_for_node_prediction!(graph, 1,learning_rate)
+    train_for_node_prediction!(graph, 1, learning_rate)
 
 end
 
 println(" ")
-display_similarities(graph)
-println(" ")
+# display_similarities(graph)
+# println(" ")
