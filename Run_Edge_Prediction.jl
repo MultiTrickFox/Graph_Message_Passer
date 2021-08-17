@@ -5,21 +5,21 @@ include("Config.jl")
 
 graph = build_graph("
 
-fox likes dog
-fox neutral human
-fox dislikes cat
+fox animal likes dog animal
+fox animal neutral human mammal
+fox animal dislikes cat animal
 
-dog likes fox
-dog likes human
-dog dislikes cat
+dog animal likes fox animal
+dog animal likes human mammal
+dog animal dislikes cat animal
 
-human likes dog
-human likes cat
-human likes fox
+human mammal likes dog animal
+human mammal likes cat animal
+human mammal likes fox animal
 
-cat neutral human
-cat dislikes dog
-cat dislikes fox
+cat animal neutral human mammal
+cat animal dislikes dog animal
+cat animal dislikes fox animal
 
 ")
 

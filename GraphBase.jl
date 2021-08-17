@@ -3,13 +3,17 @@ include("Config.jl")
 
 
 mutable struct Node
+    nn::Array{FeedForward}
     description::String
+    type::String
     label
     edges # ::Array{Edge}
     collected
 
-Node(description, label, edges=[]) = new(
+Node(nn, description, type, label, edges=[]) = new(
+    nn,
     description,
+    type,
     label,
     edges,
     zeros(1, message_size)
@@ -35,28 +39,31 @@ end
 
 
 mutable struct Graph
-    unique_nodes::Array{Node}
-    unique_edges::Array{Edge}
-    attender::Array{FeedForward}
-    edge_predictor::Array{FeedForward}
-    node_predictor::Array{FeedForward}
+    nodes::Array{Node}
     node_encodings::Dict
     edge_encodings::Dict
+    node_encodings2::Dict
+    node_nns::Dict
+    edge_nns::Dict
+    node_predictor::Array{FeedForward}
+    edge_predictor::Array{FeedForward}
 
-Graph(node_encodings, edge_encodings) = new(
+
+Graph(;node_encodings=Dict(), edge_encodings=Dict(), node_encodings2=Dict(), node_nns=Dict(), edge_nns=Dict()) = new(
     [],
-    [],
-    [FeedForward(length(edge_encodings), 1)],
-    [FeedForward(message_size*2, length(edge_encodings))],
-    [FeedForward(message_size, length(node_encodings))],
     node_encodings,
     edge_encodings,
+    node_encodings2,
+    node_nns,
+    edge_nns,
+    [],
+    [],
 )
 end
 
 
 get_node(graph, node_description::String) =
-    for node in graph.unique_nodes
+    for node in graph.nodes
         if node.description == node_description
             return node
         end
@@ -75,29 +82,34 @@ all_edges(graph) =
 begin
 
     edges = []
-    for node_from in graph.unique_nodes
-        for node_to in graph.unique_nodes
-            (edge = get_edge(graph,node_from,node_to)) != nothing ? push!(edges,edge) : ()
+
+    for node_from in graph.nodes
+        for node_to in graph.nodes
+            node_from != node_to && (edge = get_edge(graph,node_from,node_to)) != nothing ? push!(edges,edge) : ()
         end
+    end
+
+    for node in graph.nodes
+        (edge = get_edge(graph,node,node)) != nothing ? push!(edges,edge) : ()
     end
 
 edges
 end
 
 
-update_node_wrt_neighbors!(node, attender) =
+update_node_wrt_neighbors!(node) =
 
     if any([edge.label != nothing && edge.node_to.label != nothing for edge in node.edges])
         incomings = vcat([prop(edge.nn, hcat(edge.node_to.collected, edge.node_to.label)) for edge in node.edges if edge.label != nothing && edge.node_to.label != nothing]...)
-        attentions = softmax(vcat([prop(attender, edge.label) for edge in node.edges if edge.label != nothing && edge.node_to.label != nothing]...), dims=1)
+        attentions = softmax(vcat([prop(node.nn, edge.label) for edge in node.edges if edge.label != nothing && edge.node_to.label != nothing]...), dims=1)
         node.collected = sum(incomings .* attentions, dims=1)
     end
 
 
-update_node_wrt_depths(node, attender) =
+update_node_wrt_depths(node) =
 begin
 
-    tree = [[node]] # [ [node], [c1, c2], [c1c1, c1c2, c2c1, c2c2] ]
+    tree = [[node]]
     for _ in 1:propogation_depth-1
         level = []
         for node in tree[end]
@@ -110,7 +122,7 @@ begin
 
     for level in reverse(tree)
         for node in level
-            update_node_wrt_neighbors!(node, attender)
+            update_node_wrt_neighbors!(node)
         end
     end
     root_node_collected = node.collected
@@ -133,8 +145,8 @@ begin
         old_label = edge.label
         edge.label = nothing
     end
-    node_from_collected = update_node_wrt_depths(node_from, graph.attender)
-    node_to_collected = update_node_wrt_depths(node_to, graph.attender)
+    node_from_collected = update_node_wrt_depths(node_from)
+    node_to_collected = update_node_wrt_depths(node_to)
     edge != nothing ? edge.label = old_label : ()
 
 softmax(prop(graph.edge_predictor, hcat(node_from_collected, node_to_collected)))
@@ -146,7 +158,7 @@ begin
 
     old_label = node.label
     node.label = nothing
-    node_collected = update_node_wrt_depths(node, graph.attender)
+    node_collected = update_node_wrt_depths(node)
     node.label = old_label
 
 softmax(prop(graph.node_predictor, node_collected))
