@@ -84,10 +84,18 @@ begin
 end
 
 
-prop(model, in; act="tanh") =
+prop(model, in) =
 begin
     for layer in model
         in = tanh.(layer(in))
     end
 in
+end
+
+prop(model, in; act1=tanh, act2=tanh) =
+begin
+    for layer in model[1:end-1]
+        in = act1.(layer(in))
+    end
+act2.(model[end](in))
 end

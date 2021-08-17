@@ -32,34 +32,34 @@ begin
     graph.node_predictor = [FeedForward(message_size, hm_node_descriptions)]
     graph.edge_predictor = [FeedForward(message_size*2, hm_edge_descriptions)]
 
-    unique_node_ctr, unique_edge_ctr, unique_node_ctr2 = 1, 1, 1
+    unique_node_descriptions, unique_edge_descriptions, unique_node_types = 1, 1, 1
 
     for (description_node_from, type_node_from, description_edge, description_node_to, type_node_to) in statements
 
         if !(description_node_from in keys(graph.node_encodings))
-            graph.node_encodings[description_node_from] = reshape([i == unique_node_ctr ? 1.0 : 0.0 for i in 1:hm_node_descriptions], 1, hm_node_descriptions)
-            unique_node_ctr +=1
+            graph.node_encodings[description_node_from] = reshape([i == unique_node_descriptions ? 1.0 : 0.0 for i in 1:hm_node_descriptions], 1, hm_node_descriptions)
+            unique_node_descriptions +=1
         end
-        if !(type_node_from in keys(graph.node_encodings2))
-            graph.node_encodings2[type_node_from] = reshape([i == unique_node_ctr2 ? 1.0 : 0.0 for i in 1:hm_node_types], 1, hm_node_types)
-            graph.node_nns[type_node_from] = [FeedForward(hm_edge_descriptions, 1)]
-            unique_node_ctr2 +=1
+        if !(description_node_to in keys(graph.node_encodings))
+            graph.node_encodings[description_node_to] = reshape([i == unique_node_descriptions ? 1.0 : 0.0 for i in 1:hm_node_descriptions], 1, hm_node_descriptions)
+            unique_node_descriptions +=1
         end
 
-        if !(description_node_to in keys(graph.node_encodings))
-            graph.node_encodings[description_node_to] = reshape([i == unique_node_ctr ? 1.0 : 0.0 for i in 1:hm_node_descriptions], 1, hm_node_descriptions)
-            unique_node_ctr +=1
+        if !(type_node_from in keys(graph.node_encodings2))
+            graph.node_encodings2[type_node_from] = reshape([i == unique_node_types ? 1.0 : 0.0 for i in 1:hm_node_types], 1, hm_node_types)
+            graph.node_nns[type_node_from] = [FeedForward(hm_edge_descriptions, 1)]
+            unique_node_types +=1
         end
         if !(type_node_to in keys(graph.node_encodings2))
-            graph.node_encodings2[type_node_to] = reshape([i == unique_node_ctr2 ? 1.0 : 0.0 for i in 1:hm_node_types], 1, hm_node_types)
+            graph.node_encodings2[type_node_to] = reshape([i == unique_node_types ? 1.0 : 0.0 for i in 1:hm_node_types], 1, hm_node_types)
             graph.node_nns[type_node_to] = [FeedForward(hm_edge_descriptions, 1)]
-            unique_node_ctr2 +=1
+            unique_node_types +=1
         end
 
         if !(description_edge in keys(graph.edge_encodings))
-            graph.edge_encodings[description_edge] = reshape([i == unique_edge_ctr ? 1.0 : 0.0 for i in 1:hm_edge_descriptions], 1, hm_edge_descriptions)
+            graph.edge_encodings[description_edge] = reshape([i == unique_edge_descriptions ? 1.0 : 0.0 for i in 1:hm_edge_descriptions], 1, hm_edge_descriptions)
             graph.edge_nns[description_edge] = [FeedForward(hm_node_descriptions+message_size, message_size)]
-            unique_edge_ctr +=1
+            unique_edge_descriptions +=1
         end
 
         insert!(graph, (description_node_from, type_node_from, description_edge, description_node_to, type_node_to))
@@ -103,17 +103,13 @@ begin
     edge_label = graph.edge_encodings[description_edge]
 
     if bi_direc
-
         edge1 = Edge(edge_nn, description_edge, edge_label, node_from, node_to)
         edge2 = Edge(edge_nn, description_edge, edge_label, node_to, node_from)
         push!(node_from.edges, edge1)
         push!(node_to.edges, edge2)
-
     else
-
         edge = Edge(edge_nn, description_edge, edge_label, node_from, node_to)
         push!(node_from.edges, edge)
-
     end
 
 node_from, node_to
@@ -245,17 +241,7 @@ begin
 
     question_subject = nothing
     for node_question in question_graph.nodes
-        node_found = false
-        for node_original in graph.nodes
-            if node_question.description == node_original.description
-                node_found = true
-                break
-            end
-        end
-        if !node_found
-            question_subject = node_question.description
-            break
-        end
+        (question_subject = node_question.description) in keys(graph.node_encodings) ? () : break
     end
 
     for node_question in question_graph.nodes
@@ -277,9 +263,9 @@ begin
     question_node_collected = update_node_wrt_depths(question_node)
 
     predicted_id = argmax(prop(graph.node_predictor, question_node_collected))
-    for node in graph.nodes
-        if argmax(node.label) == predicted_id
-            return node.description
+    for (k,v) in graph.node_encodings
+        if argmax(v) == predicted_id
+            return k
         end
     end
 
@@ -291,7 +277,7 @@ begin
 
     node_label = node.label
     node.label = nothing
-    node_collected = update_node_wrt_depths(node, graph.attender)
+    node_collected = update_node_wrt_depths(node)
     node.label = node_label
 
 node_collected
@@ -301,13 +287,12 @@ embed_node(graph, node::String) =
     embed_node(get_node(graph,node))
 
 
-similarity(embedding1, embedding2; cosine=true) =
+similarity(embedding1, embedding2; cosine=false) =
     cosine ? sum(embedding1.*embedding2)/(norm(embedding1)*norm(embedding2)) :
         sqrt(sum((embedding1.-embedding2).^2))
 
 similarity(graph, node1, node2) =
     similarity(embed_node(graph,node1), embed_node(graph,node2))
-
 
 display_similarities(graph) =
 begin

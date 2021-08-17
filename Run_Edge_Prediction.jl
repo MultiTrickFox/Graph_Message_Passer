@@ -28,7 +28,7 @@ cat animal dislikes fox animal
 for _ in 1:hm_epochs
 
     # predict_edge(graph, "human", "dog")
-    # embed_node(training_graph, "fox")
+    # embed_node(graph, "fox")
     @show test_for_edge_prediction(graph)
 
     train_for_edge_prediction!(graph, 1, learning_rate)
