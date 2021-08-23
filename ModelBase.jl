@@ -92,10 +92,18 @@ begin
 in
 end
 
+prop(model::Array{FeedForward_I}, in) =
+begin
+    for layer in model
+        in = layer(in)
+    end
+in
+end
+
 prop(model, in; act1=tanh, act2=tanh) =
 begin
     for layer in model[1:end-1]
         in = act1.(layer(in))
     end
-act2.(model[end](in))
+act2 != nothing ? act2.(model[end](in)) : model[end](in)
 end

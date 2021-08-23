@@ -4,17 +4,17 @@ include("Config.jl")
 
 mutable struct Node
     nn::Array{FeedForward}
-    description::String
+    name::String
     type::String
-    label
+    encoding
     edges # ::Array{Edge}
     collected
 
-Node(nn, description, type, label, edges=[]) = new(
+Node(nn, name, type, encoding, edges=[]) = new(
     nn,
-    description,
+    name,
     type,
-    label,
+    encoding,
     edges,
     zeros(1, message_size)
 )
@@ -23,15 +23,15 @@ end
 
 mutable struct Edge
     nn::Array{FeedForward}
-    description::String
-    label
+    name::String
+    encoding
     node_from::Node
     node_to::Node
 
-Edge(nn, description, label, node_from, node_to) = new(
+Edge(nn, name, encoding, node_from, node_to) = new(
     nn,
-    description,
-    label,
+    name,
+    encoding,
     node_from,
     node_to,
 )
@@ -62,9 +62,9 @@ Graph(;node_encodings=Dict(), edge_encodings=Dict(), node_encodings2=Dict(), nod
 end
 
 
-get_node(graph, node_description::String) =
+get_node(graph, node_name::String) =
     for node in graph.nodes
-        if node.description == node_description
+        if node.name == node_name
             return node
         end
     end
@@ -99,9 +99,9 @@ end
 
 update_node_wrt_neighbors!(node) =
 
-    if any([edge.label != nothing && edge.node_to.label != nothing for edge in node.edges])
-        incomings = vcat([prop(edge.nn, hcat(edge.node_to.collected, edge.node_to.label)) for edge in node.edges if edge.label != nothing && edge.node_to.label != nothing]...)
-        attentions = softmax(vcat([prop(node.nn, edge.label) for edge in node.edges if edge.label != nothing && edge.node_to.label != nothing]...), dims=1)
+    if any([edge.encoding != nothing && edge.node_to.encoding != nothing for edge in node.edges])
+        incomings = vcat([prop(edge.nn, hcat(edge.node_to.collected, edge.node_to.encoding)) for edge in node.edges if edge.encoding != nothing && edge.node_to.encoding != nothing]...)
+        attentions = softmax(vcat([prop(node.nn, edge.encoding; act2=nothing) for edge in node.edges if edge.encoding != nothing && edge.node_to.encoding != nothing]...), dims=1)
         node.collected = sum(incomings .* attentions, dims=1)
     end
 
@@ -113,7 +113,7 @@ begin
     for _ in 1:propogation_depth-1
         level = []
         for node in tree[end]
-            for neighbor in [edge.node_to for edge in node.edges if edge.label != nothing && edge.node_to.label != nothing]
+            for neighbor in [edge.node_to for edge in node.edges if edge.encoding != nothing && edge.node_to.encoding != nothing]
                 neighbor in level ? () : push!(level, neighbor)
             end
         end
@@ -142,24 +142,24 @@ begin
 
     edge = get_edge(graph, node_from, node_to)
     if edge != nothing
-        old_label = edge.label
-        edge.label = nothing
+        old_encoding = edge.encoding
+        edge.encoding = nothing
     end
     node_from_collected = update_node_wrt_depths(node_from)
     node_to_collected = update_node_wrt_depths(node_to)
-    edge != nothing ? edge.label = old_label : ()
+    edge != nothing ? edge.encoding = old_encoding : ()
 
-softmax(prop(graph.edge_predictor, hcat(node_from_collected, node_to_collected)))
+softmax(prop(graph.edge_predictor, hcat(node_from_collected, node_to_collected); act2=nothing))
 end
 
 
 predict_node(graph, node::Node) =
 begin
 
-    old_label = node.label
-    node.label = nothing
+    old_encoding = node.encoding
+    node.encoding = nothing
     node_collected = update_node_wrt_depths(node)
-    node.label = old_label
+    node.encoding = old_encoding
 
-softmax(prop(graph.node_predictor, node_collected))
+softmax(prop(graph.node_predictor, node_collected; act2=nothing))
 end
