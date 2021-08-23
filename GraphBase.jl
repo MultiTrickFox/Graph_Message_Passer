@@ -47,6 +47,7 @@ mutable struct Graph
     edge_nns::Dict
     node_predictor::Array{FeedForward}
     edge_predictor::Array{FeedForward}
+    label_predictor::Array{FeedForward}
 
 
 Graph(;node_encodings=Dict(), edge_encodings=Dict(), node_encodings2=Dict(), node_nns=Dict(), edge_nns=Dict()) = new(
@@ -56,6 +57,7 @@ Graph(;node_encodings=Dict(), edge_encodings=Dict(), node_encodings2=Dict(), nod
     node_encodings2,
     node_nns,
     edge_nns,
+    [],
     [],
     [],
 )
