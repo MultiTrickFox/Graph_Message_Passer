@@ -40,9 +40,9 @@ end
 
 mutable struct Graph
     nodes::Array{Node}
-    node_encodings::Dict
-    edge_encodings::Dict
-    node_encodings2::Dict
+    node_names::Dict
+    edge_names::Dict
+    node_types::Dict
     node_nns::Dict
     edge_nns::Dict
     node_predictor::Array{FeedForward}

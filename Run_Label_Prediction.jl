@@ -30,7 +30,7 @@ labels[get_node(graph,"dog")] = randn(1,2)
 labels[get_node(graph,"human")] = randn(1,2)
 labels[get_node(graph,"cat")] = randn(1,2)
 
-graph.label_predictor = [FeedForward(message_size, 2)]
+graph.label_predictor = [FeedForward(message_size, size(collect(values(labels))[end])[end])]
 
 
 

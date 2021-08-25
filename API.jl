@@ -36,28 +36,28 @@ begin
 
     for (name_node_from, type_node_from, name_edge, name_node_to, type_node_to) in statements
 
-        if !(name_node_from in keys(graph.node_encodings))
-            graph.node_encodings[name_node_from] = reshape([i == unique_node_names ? 1.0 : 0.0 for i in 1:hm_node_names], 1, hm_node_names)
+        if !(name_node_from in keys(graph.node_names))
+            graph.node_names[name_node_from] = reshape([i == unique_node_names ? 1.0 : 0.0 for i in 1:hm_node_names], 1, hm_node_names)
             unique_node_names +=1
         end
-        if !(name_node_to in keys(graph.node_encodings))
-            graph.node_encodings[name_node_to] = reshape([i == unique_node_names ? 1.0 : 0.0 for i in 1:hm_node_names], 1, hm_node_names)
+        if !(name_node_to in keys(graph.node_names))
+            graph.node_names[name_node_to] = reshape([i == unique_node_names ? 1.0 : 0.0 for i in 1:hm_node_names], 1, hm_node_names)
             unique_node_names +=1
         end
 
-        if !(type_node_from in keys(graph.node_encodings2))
-            graph.node_encodings2[type_node_from] = reshape([i == unique_node_types ? 1.0 : 0.0 for i in 1:hm_node_types], 1, hm_node_types)
+        if !(type_node_from in keys(graph.node_types))
+            graph.node_types[type_node_from] = reshape([i == unique_node_types ? 1.0 : 0.0 for i in 1:hm_node_types], 1, hm_node_types)
             graph.node_nns[type_node_from] = [FeedForward(hm_edge_names, 1)]
             unique_node_types +=1
         end
-        if !(type_node_to in keys(graph.node_encodings2))
-            graph.node_encodings2[type_node_to] = reshape([i == unique_node_types ? 1.0 : 0.0 for i in 1:hm_node_types], 1, hm_node_types)
+        if !(type_node_to in keys(graph.node_types))
+            graph.node_types[type_node_to] = reshape([i == unique_node_types ? 1.0 : 0.0 for i in 1:hm_node_types], 1, hm_node_types)
             graph.node_nns[type_node_to] = [FeedForward(hm_edge_names, 1)]
             unique_node_types +=1
         end
 
-        if !(name_edge in keys(graph.edge_encodings))
-            graph.edge_encodings[name_edge] = reshape([i == unique_edge_names ? 1.0 : 0.0 for i in 1:hm_edge_names], 1, hm_edge_names)
+        if !(name_edge in keys(graph.edge_names))
+            graph.edge_names[name_edge] = reshape([i == unique_edge_names ? 1.0 : 0.0 for i in 1:hm_edge_names], 1, hm_edge_names)
             graph.edge_nns[name_edge] = [FeedForward(hm_node_names+message_size, message_size)]
             unique_edge_names +=1
         end
@@ -82,7 +82,7 @@ begin
         end
     end
     if !node_from_in_graph
-        node_from = Node(graph.node_nns[type_node_from], name_node_from, type_node_from, graph.node_encodings[name_node_from])
+        node_from = Node(graph.node_nns[type_node_from], name_node_from, type_node_from, graph.node_names[name_node_from])
         push!(graph.nodes, node_from)
     end
 
@@ -95,12 +95,12 @@ begin
         end
     end
     if !node_to_in_graph
-        node_to = Node(graph.node_nns[type_node_to], name_node_to, type_node_to, graph.node_encodings[name_node_to])
+        node_to = Node(graph.node_nns[type_node_to], name_node_to, type_node_to, graph.node_names[name_node_to])
         push!(graph.nodes, node_to)
     end
 
     edge_nn = graph.edge_nns[name_edge]
-    edge_encoding = graph.edge_encodings[name_edge]
+    edge_encoding = graph.edge_names[name_edge]
 
     get_edge(graph, node_from, node_to) == nothing ? push!(node_from.edges, Edge(edge_nn, name_edge, edge_encoding, node_from, node_to)) : ()
     bi_direc && get_edge(graph, node_to, node_from) == nothing ? push!(node_to.edges, Edge(edge_nn, name_edge, edge_encoding, node_to, node_from)) : ()
@@ -175,7 +175,7 @@ begin
     node_to = get_node(graph, node_to)
 
     predicted_id = argmax(predict_edge(graph, node_from, node_to))
-    for (k,v) in graph.edge_encodings
+    for (k,v) in graph.edge_names
         if argmax(v) == predicted_id
             return k
         end
@@ -248,18 +248,18 @@ begin
 
     question_subject = nothing
     for node_question in question_graph.nodes
-        (question_subject = node_question.name) in keys(graph.node_encodings) ? () : break
+        (question_subject = node_question.name) in keys(graph.node_names) ? () : break
     end
 
     for node_question in question_graph.nodes
         if node_question.name != question_subject
-            node_question.encoding = graph.node_encodings[node_question.name]
+            node_question.encoding = graph.node_names[node_question.name]
             node_question.nn = graph.node_nns[node_question.type]
         end
     end
 
     for edge_question in all_edges(question_graph)
-        edge_question.encoding = graph.edge_encodings[edge_question.name]
+        edge_question.encoding = graph.edge_names[edge_question.name]
         edge_question.nn = graph.edge_nns[edge_question.name]
     end
 
@@ -270,7 +270,7 @@ begin
     question_graph.node_predictor = graph.node_predictor
 
     predicted_id = argmax(predict_node(question_graph, question_node))
-    for (k,v) in graph.node_encodings
+    for (k,v) in graph.node_names
         if argmax(v) == predicted_id
             return k
         end
