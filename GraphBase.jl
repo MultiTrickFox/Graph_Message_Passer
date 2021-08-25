@@ -50,11 +50,11 @@ mutable struct Graph
     label_predictor::Array{FeedForward}
 
 
-Graph(;node_encodings=Dict(), edge_encodings=Dict(), node_encodings2=Dict(), node_nns=Dict(), edge_nns=Dict()) = new(
+Graph(;node_names=Dict(), edge_names=Dict(), node_types=Dict(), node_nns=Dict(), edge_nns=Dict()) = new(
     [],
-    node_encodings,
-    edge_encodings,
-    node_encodings2,
+    node_names,
+    edge_names,
+    node_types,
     node_nns,
     edge_nns,
     [],

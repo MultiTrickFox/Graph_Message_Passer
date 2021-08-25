@@ -279,7 +279,7 @@ begin
 end
 
 
-embed_node(graph, node::Node) =
+embed_node(node::Node) =
 begin
 
     node_encoding = node.encoding
@@ -291,15 +291,18 @@ node_collected
 end
 
 embed_node(graph, node::String) =
-    embed_node(graph, get_node(graph,node))
+    embed_node(get_node(graph,node))
 
 
 similarity(embedding1, embedding2; cosine=false) =
     cosine ? sum(embedding1.*embedding2)/(norm(embedding1)*norm(embedding2)) :
         sqrt(sum((embedding1.-embedding2).^2))
 
-similarity(graph, node1, node2) =
-    similarity(embed_node(graph,node1), embed_node(graph,node2))
+similarity(node1::Node, node2::Node) =
+    similarity(embed_node(node1), embed_node(node2))
+
+similarity(graph, node1::String, node2::String) =
+    similarity(embed_node(get_node(graph,node1)), embed_node(get_node(graph,node2)))
 
 display_similarities(graph) =
 begin
@@ -341,7 +344,7 @@ begin
         grads_predictor = [zeros(size(getfield(layer, param))) for layer in graph.edge_predictor for param in fieldnames(typeof(layer))]
 
         for (node,label) in zip(nodes,labels)
-            result = @diff sum(mse(label, prop(graph.label_predictor, embed_node(graph,node))))
+            result = @diff sum(mse(label, prop(graph.label_predictor, update_node_wrt_depths(node))))
             loss += value(result)
             grads_edge += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for nn in values(graph.edge_nns) for layer in nn for param in fieldnames(typeof(layer))]
             grads_node += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for nn in values(graph.node_nns) for layer in nn for param in fieldnames(typeof(layer))]
@@ -381,11 +384,11 @@ begin
 
     distance = 0
     for (node,label) in zip(nodes,labels)
-        distance += sum(mse(label, prop(graph.label_predictor, embed_node(graph,node))))
+        distance += sum(mse(label, prop(graph.label_predictor, update_node_wrt_depths(node))))
     end
 
 distance
 end
 
 predict_label(graph, node::String) =
-    prop(graph.label_predictor, embed_node(graph, get_node(graph, node)))
+    prop(graph.label_predictor, update_node_wrt_depths(get_node(graph,node)))
