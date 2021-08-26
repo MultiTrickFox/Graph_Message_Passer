@@ -47,3 +47,11 @@ end
 println(" ")
 # display_similarities(graph)
 # println(" ")
+
+
+
+## Extra
+
+# binary_cross_entropy(label, prop(predictor, update_node_wrt_depths(node), act2=sigm))
+# cross_entropy(label, softmax(prop(predictor, update_node_wrt_depths(node), act2=nothing)))
+# mse(label, prop(predictor, update_node_wrt_depths(node)))

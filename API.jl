@@ -5,7 +5,7 @@ using Random: shuffle
 using LinearAlgebra: norm
 
 
-build_graph(graph_string) =
+build_graph(graph_string; bi_direc=false) =
 begin
 
     statements = [split(statement," ") for statement in split(graph_string, "\n") if statement != ""]
@@ -62,7 +62,7 @@ begin
             unique_edge_names +=1
         end
 
-        insert!(graph, (name_node_from, type_node_from, name_edge, name_node_to, type_node_to))
+        insert!(graph, (name_node_from, type_node_from, name_edge, name_node_to, type_node_to), bi_direc=bi_direc)
 
     end
 

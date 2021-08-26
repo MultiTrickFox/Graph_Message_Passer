@@ -6,9 +6,10 @@ using LinearAlgebra: I, norm
 Identity(i;scale=1) = zeros(i,i) + I * scale
 
 sigm(x) = 1 / (1 + exp(-x))
-tanh(x) = (exp(x) - exp(-x)) / (exp(x) + exp(-x))
+tanh(x) = (begin exp2x = exp(2*x) ; (exp2x-1) / (exp2x+1) end)
 relu(x) = max(0, x)
-softmax(x) = exp.(x) ./ sum(exp.(x))
+
+softmax(x) = (begin expx = exp.(x) ; expx ./ sum(expx) end)
 
 cross_entropy(label, prediction) = -(label .* log.(prediction))
 binary_cross_entropy(label, prediction) = -(label .* log.(prediction) + (1 .- label) .* log.(1 .- prediction))
