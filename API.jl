@@ -341,14 +341,14 @@ begin
         loss = 0
         grads_edge = [zeros(size(getfield(layer, param))) for nn in values(graph.edge_nns) for layer in nn for param in fieldnames(typeof(layer))]
         grads_node = [zeros(size(getfield(layer, param))) for nn in values(graph.node_nns) for layer in nn for param in fieldnames(typeof(layer))]
-        grads_predictor = [zeros(size(getfield(layer, param))) for layer in graph.edge_predictor for param in fieldnames(typeof(layer))]
+        grads_predictor = [zeros(size(getfield(layer, param))) for layer in graph.label_predictor for param in fieldnames(typeof(layer))]
 
         for (node,label) in zip(nodes,labels)
             result = @diff sum(mse(label, prop(graph.label_predictor, update_node_wrt_depths(node))))
             loss += value(result)
             grads_edge += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for nn in values(graph.edge_nns) for layer in nn for param in fieldnames(typeof(layer))]
             grads_node += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for nn in values(graph.node_nns) for layer in nn for param in fieldnames(typeof(layer))]
-            grads_predictor += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for layer in graph.edge_predictor for param in fieldnames(typeof(layer))]
+            grads_predictor += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for layer in graph.label_predictor for param in fieldnames(typeof(layer))]
         end
 
         for nn in values(graph.edge_nns)
@@ -365,7 +365,7 @@ begin
                 end
             end
         end
-        for layer in graph.edge_predictor
+        for layer in graph.label_predictor
             for (param,grad) in zip(fieldnames(typeof(layer)),grads_predictor)
                 setfield!(layer, param, Param(getfield(layer, param) -lr*grad))
             end
