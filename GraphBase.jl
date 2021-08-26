@@ -103,7 +103,7 @@ update_node_wrt_neighbors!(node) =
 
     if any([edge.encoding != nothing && edge.node_to.encoding != nothing for edge in node.edges])
         incomings = vcat([prop(edge.nn, hcat(edge.node_to.collected, edge.node_to.encoding)) for edge in node.edges if edge.encoding != nothing && edge.node_to.encoding != nothing]...)
-        attentions = softmax(vcat([prop(node.nn, edge.encoding; act2=nothing) for edge in node.edges if edge.encoding != nothing && edge.node_to.encoding != nothing]...), dims=1)
+        attentions = softmax(vcat([prop(node.nn, edge.encoding; act2=nothing) for edge in node.edges if edge.encoding != nothing && edge.node_to.encoding != nothing]...))
         node.collected = sum(incomings .* attentions, dims=1)
     end
 

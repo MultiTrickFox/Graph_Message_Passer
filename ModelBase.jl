@@ -2,17 +2,16 @@ using AutoGrad: Param, @diff, value, grad
 
 using LinearAlgebra: I, norm
 
-using Knet: softmax
-
 
 Identity(i;scale=1) = zeros(i,i) + I * scale
 
 sigm(x) = 1 / (1 + exp(-x))
-tanh(x) = 2 * sigm(2*x) - 1
-relu(x) = max(0,x)
-# softmax(vector) = (exp_vector -> exp_vector./sum(exp_vector))(exp.(vector))
+tanh(x) = (exp(x) - exp(-x)) / (exp(x) + exp(-x))
+relu(x) = max(0, x)
+softmax(x) = exp.(x) ./ sum(exp.(x))
 
 cross_entropy(label, prediction) = -(label .* log.(prediction))
+binary_cross_entropy(label, prediction) = -(label .* log.(prediction) + (1 .- label) .* log.(1 .- prediction))
 mse(label, prediction) = (label - prediction) .^2
 
 
