@@ -47,12 +47,12 @@ begin
 
         if !(type_node_from in keys(graph.node_types))
             graph.node_types[type_node_from] = reshape([i == unique_node_types ? 1.0 : 0.0 for i in 1:hm_node_types], 1, hm_node_types)
-            graph.node_nns[type_node_from] = [FeedForward(hm_edge_names, 1)]
+            graph.node_nns[type_node_from] = [FeedForward(hm_edge_names, 1), FeedForward(message_size, message_size)]
             unique_node_types +=1
         end
         if !(type_node_to in keys(graph.node_types))
             graph.node_types[type_node_to] = reshape([i == unique_node_types ? 1.0 : 0.0 for i in 1:hm_node_types], 1, hm_node_types)
-            graph.node_nns[type_node_to] = [FeedForward(hm_edge_names, 1)]
+            graph.node_nns[type_node_to] = [FeedForward(hm_edge_names, 1), FeedForward(message_size, message_size)]
             unique_node_types +=1
         end
 
@@ -129,23 +129,29 @@ begin
             grads_predictor += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for layer in graph.edge_predictor for param in fieldnames(typeof(layer))]
         end
 
+        ctr = 0
         for nn in values(graph.edge_nns)
             for layer in nn
-                for (param,grad) in zip(fieldnames(typeof(layer)),grads_edge)
-                    setfield!(layer, param, Param(getfield(layer, param) -lr*grad))
+                for param in fieldnames(typeof(layer))
+                    ctr +=1
+                    setfield!(layer, param, Param(getfield(layer, param) -lr*grads_edge[ctr]))
                 end
             end
         end
+        ctr = 0
         for nn in values(graph.node_nns)
             for layer in nn
-                for (param,grad) in zip(fieldnames(typeof(layer)),grads_node)
-                    setfield!(layer, param, Param(getfield(layer, param) -lr*grad))
+                for param in fieldnames(typeof(layer))
+                    ctr +=1
+                    setfield!(layer, param, Param(getfield(layer, param) -lr*grads_node[ctr]))
                 end
             end
         end
+        ctr = 0
         for layer in graph.edge_predictor
-            for (param,grad) in zip(fieldnames(typeof(layer)),grads_predictor)
-                setfield!(layer, param, Param(getfield(layer, param) -lr*grad))
+            for param in fieldnames(typeof(layer))
+                ctr +=1
+                setfield!(layer, param, Param(getfield(layer, param) -lr*grads_predictor[ctr]))
             end
         end
 
@@ -204,23 +210,29 @@ begin
             grads_predictor += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for layer in graph.node_predictor for param in fieldnames(typeof(layer))]
         end
 
+        ctr = 0
         for nn in values(graph.edge_nns)
             for layer in nn
-                for (param,grad) in zip(fieldnames(typeof(layer)),grads_edge)
-                    setfield!(layer, param, Param(getfield(layer, param) -lr*grad))
+                for param in fieldnames(typeof(layer))
+                    ctr +=1
+                    setfield!(layer, param, Param(getfield(layer, param) -lr*grads_edge[ctr]))
                 end
             end
         end
+        ctr = 0
         for nn in values(graph.node_nns)
             for layer in nn
-                for (param,grad) in zip(fieldnames(typeof(layer)),grads_node)
-                    setfield!(layer, param, Param(getfield(layer, param) -lr*grad))
+                for param in fieldnames(typeof(layer))
+                    ctr +=1
+                    setfield!(layer, param, Param(getfield(layer, param) -lr*grads_node[ctr]))
                 end
             end
         end
+        ctr = 0
         for layer in graph.node_predictor
-            for (param,grad) in zip(fieldnames(typeof(layer)),grads_predictor)
-                setfield!(layer, param, Param(getfield(layer, param) -lr*grad))
+            for param in fieldnames(typeof(layer))
+                ctr +=1
+                setfield!(layer, param, Param(getfield(layer, param) -lr*grads_predictor[ctr]))
             end
         end
 
@@ -319,7 +331,7 @@ begin
                 end
             end
             if !already_calculated && (edge = get_edge(graph,node_from,node_to)) != nothing
-                scores[edge] = similarity(graph, node_from, node_to)
+                scores[edge] = similarity(node_from, node_to)
             end
         end
     end
@@ -351,23 +363,29 @@ begin
             grads_predictor += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for layer in graph.label_predictor for param in fieldnames(typeof(layer))]
         end
 
+        ctr = 0
         for nn in values(graph.edge_nns)
             for layer in nn
-                for (param,grad) in zip(fieldnames(typeof(layer)),grads_edge)
-                    setfield!(layer, param, Param(getfield(layer, param) -lr*grad))
+                for param in fieldnames(typeof(layer))
+                    ctr +=1
+                    setfield!(layer, param, Param(getfield(layer, param) -lr*grads_edge[ctr]))
                 end
             end
         end
+        ctr = 0
         for nn in values(graph.node_nns)
             for layer in nn
-                for (param,grad) in zip(fieldnames(typeof(layer)),grads_node)
-                    setfield!(layer, param, Param(getfield(layer, param) -lr*grad))
+                for param in fieldnames(typeof(layer))
+                    ctr +=1
+                    setfield!(layer, param, Param(getfield(layer, param) -lr*grads_node[ctr]))
                 end
             end
         end
+        ctr = 0
         for layer in graph.label_predictor
-            for (param,grad) in zip(fieldnames(typeof(layer)),grads_predictor)
-                setfield!(layer, param, Param(getfield(layer, param) -lr*grad))
+            for param in fieldnames(typeof(layer))
+                ctr +=1
+                setfield!(layer, param, Param(getfield(layer, param) -lr*grads_predictor[ctr]))
             end
         end
 

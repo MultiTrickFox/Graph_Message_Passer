@@ -80,7 +80,7 @@ end
 
 (layer::FeedForward_I)(in) =
 begin
-    relu.(in * layer.w) # + layer.b)
+    in * layer.w # + layer.b)
 end
 
 

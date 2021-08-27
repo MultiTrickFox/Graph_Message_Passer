@@ -25,16 +25,16 @@ cat animal dislikes fox animal
 
 
 labels = Dict()
-labels[get_node(graph,"fox")] = randn(1,2)
-labels[get_node(graph,"dog")] = randn(1,2)
-labels[get_node(graph,"human")] = randn(1,2)
-labels[get_node(graph,"cat")] = randn(1,2)
+labels[get_node(graph,"fox")] = tanh.(randn(1,2))
+labels[get_node(graph,"dog")] = tanh.(randn(1,2))
+labels[get_node(graph,"human")] = tanh.(randn(1,2))
+labels[get_node(graph,"cat")] = tanh.(randn(1,2))
 
 graph.label_predictor = [FeedForward(message_size, size(collect(values(labels))[end])[end])]
 
 
 
-for _ in 1:hm_epochs
+for i in 1:hm_epochs
 
     # predict_label(graph, "human")
     # embed_node(graph, "fox")
