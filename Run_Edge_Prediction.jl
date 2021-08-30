@@ -25,16 +25,20 @@ cat animal dislikes fox animal
 
 
 
-for _ in 1:hm_epochs
+@show test_for_edge_prediction(graph)
 
-    # predict_edge(graph, "human", "dog")
-    # embed_node(graph, "fox")
-    @show test_for_edge_prediction(graph)
+for i in 1:hm_epochs
 
-    train_for_edge_prediction!(graph, 1, learning_rate)
+    println("train: $(train_for_edge_prediction!(graph, learning_rate))")
+
+    i%test_per_epoch == 0 ? println("\ttest: $(test_for_edge_prediction(graph))") : ()
 
 end
 
 println(" ")
+
+
+
+# predict_edge(graph, "human", "dog")
+# embed_node(graph, "fox")
 # display_similarities(graph)
-# println(" ")

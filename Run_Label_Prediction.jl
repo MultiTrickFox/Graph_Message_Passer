@@ -34,23 +34,25 @@ graph.label_predictor = [FeedForward(message_size, size(collect(values(labels))[
 
 
 
+@show test_for_label_prediction(graph, keys(labels), values(labels))
+
 for i in 1:hm_epochs
 
-    # predict_label(graph, "human")
-    # embed_node(graph, "fox")
-    @show test_for_label_prediction(graph, keys(labels), values(labels))
+    println("train: $(train_for_label_prediction!(graph, learning_rate, keys(labels), values(labels)))")
 
-    train_for_label_prediction!(graph, 1, learning_rate, keys(labels), values(labels))
+    i%test_per_epoch == 0 ? println("\ttest: $(test_for_label_prediction(graph, keys(labels), values(labels)))") : ()
 
 end
 
 println(" ")
+
+
+
+# predict_label(graph, "human")
+# embed_node(graph, "fox")
 # display_similarities(graph)
-# println(" ")
 
 
-
-## Extra
 
 # binary_cross_entropy(label, prop(predictor, update_node_wrt_depths(node), act2=sigm))
 # cross_entropy(label, softmax(prop(predictor, update_node_wrt_depths(node), act2=nothing)))

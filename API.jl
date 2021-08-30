@@ -109,58 +109,49 @@ node_from, node_to
 end
 
 
-train_for_edge_prediction!(graph, epochs, lr; edges=all_edges(graph)) =
+train_for_edge_prediction!(graph, lr; edges=all_edges(graph)) =
 begin
 
-    losses = []
+    loss = 0
+    grads_edge = [zeros(size(getfield(layer, param))) for nn in values(graph.edge_nns) for layer in nn for param in fieldnames(typeof(layer))]
+    grads_node = [zeros(size(getfield(layer, param))) for nn in values(graph.node_nns) for layer in nn for param in fieldnames(typeof(layer))]
+    grads_predictor = [zeros(size(getfield(layer, param))) for layer in graph.edge_predictor for param in fieldnames(typeof(layer))]
 
-    for ep in 1:epochs
-
-        loss = 0
-        grads_edge = [zeros(size(getfield(layer, param))) for nn in values(graph.edge_nns) for layer in nn for param in fieldnames(typeof(layer))]
-        grads_node = [zeros(size(getfield(layer, param))) for nn in values(graph.node_nns) for layer in nn for param in fieldnames(typeof(layer))]
-        grads_predictor = [zeros(size(getfield(layer, param))) for layer in graph.edge_predictor for param in fieldnames(typeof(layer))]
-
-        for edge in edges
-            result = @diff sum(cross_entropy(edge.encoding, predict_edge(graph, edge.node_from, edge.node_to)))
-            loss += value(result)
-            grads_edge += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for nn in values(graph.edge_nns) for layer in nn for param in fieldnames(typeof(layer))]
-            grads_node += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for nn in values(graph.node_nns) for layer in nn for param in fieldnames(typeof(layer))]
-            grads_predictor += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for layer in graph.edge_predictor for param in fieldnames(typeof(layer))]
-        end
-
-        ctr = 0
-        for nn in values(graph.edge_nns)
-            for layer in nn
-                for param in fieldnames(typeof(layer))
-                    ctr +=1
-                    setfield!(layer, param, Param(getfield(layer, param) -lr*grads_edge[ctr]))
-                end
-            end
-        end
-        ctr = 0
-        for nn in values(graph.node_nns)
-            for layer in nn
-                for param in fieldnames(typeof(layer))
-                    ctr +=1
-                    setfield!(layer, param, Param(getfield(layer, param) -lr*grads_node[ctr]))
-                end
-            end
-        end
-        ctr = 0
-        for layer in graph.edge_predictor
-            for param in fieldnames(typeof(layer))
-                ctr +=1
-                setfield!(layer, param, Param(getfield(layer, param) -lr*grads_predictor[ctr]))
-            end
-        end
-
-        println("Epoch $(ep) Loss $(loss)")
-        push!(losses, loss)
-
+    for edge in edges
+        result = @diff sum(cross_entropy(edge.encoding, predict_edge(graph, edge.node_from, edge.node_to)))
+        loss += value(result)
+        grads_edge += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for nn in values(graph.edge_nns) for layer in nn for param in fieldnames(typeof(layer))]
+        grads_node += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for nn in values(graph.node_nns) for layer in nn for param in fieldnames(typeof(layer))]
+        grads_predictor += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for layer in graph.edge_predictor for param in fieldnames(typeof(layer))]
     end
 
-losses
+    ctr = 0
+    for nn in values(graph.edge_nns)
+        for layer in nn
+            for param in fieldnames(typeof(layer))
+                ctr +=1
+                setfield!(layer, param, Param(getfield(layer, param) -lr*grads_edge[ctr]))
+            end
+        end
+    end
+    ctr = 0
+    for nn in values(graph.node_nns)
+        for layer in nn
+            for param in fieldnames(typeof(layer))
+                ctr +=1
+                setfield!(layer, param, Param(getfield(layer, param) -lr*grads_node[ctr]))
+            end
+        end
+    end
+    ctr = 0
+    for layer in graph.edge_predictor
+        for param in fieldnames(typeof(layer))
+            ctr +=1
+            setfield!(layer, param, Param(getfield(layer, param) -lr*grads_predictor[ctr]))
+        end
+    end
+
+loss
 end
 
 test_for_edge_prediction(graph; edges=all_edges(graph)) =
@@ -190,58 +181,49 @@ begin
 end
 
 
-train_for_node_prediction!(graph, epochs, lr; nodes=graph.nodes) =
+train_for_node_prediction!(graph, lr; nodes=graph.nodes) =
 begin
 
-    losses = []
+    loss = 0
+    grads_edge = [zeros(size(getfield(layer, param))) for nn in values(graph.edge_nns) for layer in nn for param in fieldnames(typeof(layer))]
+    grads_node = [zeros(size(getfield(layer, param))) for nn in values(graph.node_nns) for layer in nn for param in fieldnames(typeof(layer))]
+    grads_predictor = [zeros(size(getfield(layer, param))) for layer in graph.node_predictor for param in fieldnames(typeof(layer))]
 
-    for ep in 1:epochs
-
-        loss = 0
-        grads_edge = [zeros(size(getfield(layer, param))) for nn in values(graph.edge_nns) for layer in nn for param in fieldnames(typeof(layer))]
-        grads_node = [zeros(size(getfield(layer, param))) for nn in values(graph.node_nns) for layer in nn for param in fieldnames(typeof(layer))]
-        grads_predictor = [zeros(size(getfield(layer, param))) for layer in graph.node_predictor for param in fieldnames(typeof(layer))]
-
-        for node in nodes
-            result = @diff sum(cross_entropy(node.encoding, predict_node(graph, node)))
-            loss += value(result)
-            grads_edge += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for nn in values(graph.edge_nns) for layer in nn for param in fieldnames(typeof(layer))]
-            grads_node += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for nn in values(graph.node_nns) for layer in nn for param in fieldnames(typeof(layer))]
-            grads_predictor += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for layer in graph.node_predictor for param in fieldnames(typeof(layer))]
-        end
-
-        ctr = 0
-        for nn in values(graph.edge_nns)
-            for layer in nn
-                for param in fieldnames(typeof(layer))
-                    ctr +=1
-                    setfield!(layer, param, Param(getfield(layer, param) -lr*grads_edge[ctr]))
-                end
-            end
-        end
-        ctr = 0
-        for nn in values(graph.node_nns)
-            for layer in nn
-                for param in fieldnames(typeof(layer))
-                    ctr +=1
-                    setfield!(layer, param, Param(getfield(layer, param) -lr*grads_node[ctr]))
-                end
-            end
-        end
-        ctr = 0
-        for layer in graph.node_predictor
-            for param in fieldnames(typeof(layer))
-                ctr +=1
-                setfield!(layer, param, Param(getfield(layer, param) -lr*grads_predictor[ctr]))
-            end
-        end
-
-        println("Epoch $(ep) Loss $(loss)")
-        push!(losses, loss)
-
+    for node in nodes
+        result = @diff sum(cross_entropy(node.encoding, predict_node(graph, node)))
+        loss += value(result)
+        grads_edge += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for nn in values(graph.edge_nns) for layer in nn for param in fieldnames(typeof(layer))]
+        grads_node += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for nn in values(graph.node_nns) for layer in nn for param in fieldnames(typeof(layer))]
+        grads_predictor += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for layer in graph.node_predictor for param in fieldnames(typeof(layer))]
     end
 
-losses
+    ctr = 0
+    for nn in values(graph.edge_nns)
+        for layer in nn
+            for param in fieldnames(typeof(layer))
+                ctr +=1
+                setfield!(layer, param, Param(getfield(layer, param) -lr*grads_edge[ctr]))
+            end
+        end
+    end
+    ctr = 0
+    for nn in values(graph.node_nns)
+        for layer in nn
+            for param in fieldnames(typeof(layer))
+                ctr +=1
+                setfield!(layer, param, Param(getfield(layer, param) -lr*grads_node[ctr]))
+            end
+        end
+    end
+    ctr = 0
+    for layer in graph.node_predictor
+        for param in fieldnames(typeof(layer))
+            ctr +=1
+            setfield!(layer, param, Param(getfield(layer, param) -lr*grads_predictor[ctr]))
+        end
+    end
+
+loss
 end
 
 test_for_node_prediction(graph; nodes=graph.nodes) =
@@ -343,58 +325,49 @@ begin
 end
 
 
-train_for_label_prediction!(graph, epochs, lr, nodes, labels) =
+train_for_label_prediction!(graph, lr, nodes, labels) =
 begin
 
-    losses = []
+    loss = 0
+    grads_edge = [zeros(size(getfield(layer, param))) for nn in values(graph.edge_nns) for layer in nn for param in fieldnames(typeof(layer))]
+    grads_node = [zeros(size(getfield(layer, param))) for nn in values(graph.node_nns) for layer in nn for param in fieldnames(typeof(layer))]
+    grads_predictor = [zeros(size(getfield(layer, param))) for layer in graph.label_predictor for param in fieldnames(typeof(layer))]
 
-    for ep in 1:epochs
-
-        loss = 0
-        grads_edge = [zeros(size(getfield(layer, param))) for nn in values(graph.edge_nns) for layer in nn for param in fieldnames(typeof(layer))]
-        grads_node = [zeros(size(getfield(layer, param))) for nn in values(graph.node_nns) for layer in nn for param in fieldnames(typeof(layer))]
-        grads_predictor = [zeros(size(getfield(layer, param))) for layer in graph.label_predictor for param in fieldnames(typeof(layer))]
-
-        for (node,label) in zip(nodes,labels)
-            result = @diff sum(mse(label, prop(graph.label_predictor, update_node_wrt_depths(node))))
-            loss += value(result)
-            grads_edge += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for nn in values(graph.edge_nns) for layer in nn for param in fieldnames(typeof(layer))]
-            grads_node += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for nn in values(graph.node_nns) for layer in nn for param in fieldnames(typeof(layer))]
-            grads_predictor += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for layer in graph.label_predictor for param in fieldnames(typeof(layer))]
-        end
-
-        ctr = 0
-        for nn in values(graph.edge_nns)
-            for layer in nn
-                for param in fieldnames(typeof(layer))
-                    ctr +=1
-                    setfield!(layer, param, Param(getfield(layer, param) -lr*grads_edge[ctr]))
-                end
-            end
-        end
-        ctr = 0
-        for nn in values(graph.node_nns)
-            for layer in nn
-                for param in fieldnames(typeof(layer))
-                    ctr +=1
-                    setfield!(layer, param, Param(getfield(layer, param) -lr*grads_node[ctr]))
-                end
-            end
-        end
-        ctr = 0
-        for layer in graph.label_predictor
-            for param in fieldnames(typeof(layer))
-                ctr +=1
-                setfield!(layer, param, Param(getfield(layer, param) -lr*grads_predictor[ctr]))
-            end
-        end
-
-        println("Epoch $(ep) Loss $(loss)")
-        push!(losses, loss)
-
+    for (node,label) in zip(nodes,labels)
+        result = @diff sum(mse(label, prop(graph.label_predictor, update_node_wrt_depths(node))))
+        loss += value(result)
+        grads_edge += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for nn in values(graph.edge_nns) for layer in nn for param in fieldnames(typeof(layer))]
+        grads_node += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for nn in values(graph.node_nns) for layer in nn for param in fieldnames(typeof(layer))]
+        grads_predictor += [(g = grad(result, getfield(layer, param))) == nothing ? zeros(size(getfield(layer, param))) : g for layer in graph.label_predictor for param in fieldnames(typeof(layer))]
     end
 
-losses
+    ctr = 0
+    for nn in values(graph.edge_nns)
+        for layer in nn
+            for param in fieldnames(typeof(layer))
+                ctr +=1
+                setfield!(layer, param, Param(getfield(layer, param) -lr*grads_edge[ctr]))
+            end
+        end
+    end
+    ctr = 0
+    for nn in values(graph.node_nns)
+        for layer in nn
+            for param in fieldnames(typeof(layer))
+                ctr +=1
+                setfield!(layer, param, Param(getfield(layer, param) -lr*grads_node[ctr]))
+            end
+        end
+    end
+    ctr = 0
+    for layer in graph.label_predictor
+        for param in fieldnames(typeof(layer))
+            ctr +=1
+            setfield!(layer, param, Param(getfield(layer, param) -lr*grads_predictor[ctr]))
+        end
+    end
+
+loss
 end
 
 test_for_label_prediction(graph, nodes, labels) =
