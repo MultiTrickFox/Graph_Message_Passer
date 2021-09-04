@@ -28,6 +28,9 @@ begin
     hm_edge_names = length(unique_edge_names)
     hm_node_types = length(unique_node_types)
 
+    edge_nn_insize = hm_node_names*2 + message_size
+    node_nn_insize = hm_node_names*2 + hm_edge_names
+
     graph = Graph()
     graph.node_predictor = [FeedForward(message_size, hm_node_names)]
     graph.edge_predictor = [FeedForward(message_size*2, hm_edge_names)]
@@ -47,18 +50,18 @@ begin
 
         if !(type_node_from in keys(graph.node_types))
             graph.node_types[type_node_from] = reshape([i == unique_node_types ? 1.0 : 0.0 for i in 1:hm_node_types], 1, hm_node_types)
-            graph.node_nns[type_node_from] = [FeedForward(hm_node_names+hm_edge_names, 1)]
+            graph.node_nns[type_node_from] = [FeedForward(node_nn_insize, 1)]
             unique_node_types +=1
         end
         if !(type_node_to in keys(graph.node_types))
             graph.node_types[type_node_to] = reshape([i == unique_node_types ? 1.0 : 0.0 for i in 1:hm_node_types], 1, hm_node_types)
-            graph.node_nns[type_node_to] = [FeedForward(hm_node_names+hm_edge_names, 1)]
+            graph.node_nns[type_node_to] = [FeedForward(node_nn_insize, 1)]
             unique_node_types +=1
         end
 
         if !(name_edge in keys(graph.edge_names))
             graph.edge_names[name_edge] = reshape([i == unique_edge_names ? 1.0 : 0.0 for i in 1:hm_edge_names], 1, hm_edge_names)
-            graph.edge_nns[name_edge] = [FeedForward(hm_node_names+message_size, message_size)]
+            graph.edge_nns[name_edge] = [FeedForward(edge_nn_insize, message_size)]
             unique_edge_names +=1
         end
 

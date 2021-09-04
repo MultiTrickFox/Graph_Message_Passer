@@ -106,21 +106,20 @@ begin
 
     if length(edges) > 0
 
-        unknown_encoding = (node.encoding == nothing)
-        if unknown_encoding
+        if (no_encoding = node.encoding == nothing)
             for edge in node.edges
-                if (encoding = edge.node_to.encoding) != nothing
-                    node.encoding = zeros(size(encoding))
+                if edge.node_to.encoding != nothing
+                    node.encoding = zeros(size(edge.node_to.encoding))
                     break
                 end
             end
         end
 
-        incomings = vcat([prop(edge.nn, hcat(edge.node_to.collected,edge.node_to.encoding)) for edge in edges]...)
-        attentions = softmax(vcat([prop(node.nn, hcat(node.encoding,edge.encoding); act2=nothing) for edge in edges]...))
+        incomings = vcat([prop(edge.nn, hcat(edge.node_to.collected, edge.node_to.encoding, node.encoding)) for edge in edges]...)
+        attentions = softmax(vcat([prop(node.nn, hcat(edge.encoding, edge.node_to.encoding, node.encoding); act2=nothing) for edge in edges]...))
         node.collected = sum(incomings .* attentions, dims=1)
 
-        unknown_encoding ? node.encoding = nothing : ()
+        no_encoding ? node.encoding = nothing : ()
 
     end
 
