@@ -47,12 +47,12 @@ begin
 
         if !(type_node_from in keys(graph.node_types))
             graph.node_types[type_node_from] = reshape([i == unique_node_types ? 1.0 : 0.0 for i in 1:hm_node_types], 1, hm_node_types)
-            graph.node_nns[type_node_from] = [FeedForward(hm_edge_names, 1)]
+            graph.node_nns[type_node_from] = [FeedForward(hm_node_names+hm_edge_names, 1)]
             unique_node_types +=1
         end
         if !(type_node_to in keys(graph.node_types))
             graph.node_types[type_node_to] = reshape([i == unique_node_types ? 1.0 : 0.0 for i in 1:hm_node_types], 1, hm_node_types)
-            graph.node_nns[type_node_to] = [FeedForward(hm_edge_names, 1)]
+            graph.node_nns[type_node_to] = [FeedForward(hm_node_names+hm_edge_names, 1)]
             unique_node_types +=1
         end
 
